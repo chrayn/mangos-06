@@ -1,9 +1,10 @@
-/* crypto/ui/ui.h -*- mode:C; c-file-style: "eay" -*- */
-/* Written by Richard Levitte (richard@levitte.org) for the OpenSSL
- * project 2001.
+/* crypto/pqueue/pqueue.h */
+/* 
+ * DTLS implementation written by Nagendra Modadugu
+ * (nagendra@cs.stanford.edu) for the OpenSSL project 2005.  
  */
 /* ====================================================================
- * Copyright (c) 2001 The OpenSSL Project.  All rights reserved.
+ * Copyright (c) 1999-2005 The OpenSSL Project.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -20,12 +21,12 @@
  * 3. All advertising materials mentioning features or use of this
  *    software must display the following acknowledgment:
  *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
+ *    for use in the OpenSSL Toolkit. (http://www.OpenSSL.org/)"
  *
  * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
  *    endorse or promote products derived from this software without
  *    prior written permission. For written permission, please contact
- *    openssl-core@openssl.org.
+ *    openssl-core@OpenSSL.org.
  *
  * 5. Products derived from this software may not be called "OpenSSL"
  *    nor may "OpenSSL" appear in their names without prior written
@@ -34,7 +35,7 @@
  * 6. Redistributions of any form whatsoever must retain the following
  *    acknowledgment:
  *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
+ *    for use in the OpenSSL Toolkit (http://www.OpenSSL.org/)"
  *
  * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
  * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -56,28 +57,39 @@
  *
  */
 
-#ifndef HEADER_UI_COMPAT_H
-#define HEADER_UI_COMPAT_H
+#ifndef HEADER_PQUEUE_H
+#define HEADER_PQUEUE_H
 
-#include <openssl/opensslconf.h>
-#include <openssl/ui.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
+#include <openssl/pq_compat.h>
 
-/* The following functions were previously part of the DES section,
-   and are provided here for backward compatibility reasons. */
+typedef struct _pqueue *pqueue;
 
-#define des_read_pw_string(b,l,p,v) \
-	_ossl_old_des_read_pw_string((b),(l),(p),(v))
-#define des_read_pw(b,bf,s,p,v) \
-	_ossl_old_des_read_pw((b),(bf),(s),(p),(v))
+typedef struct _pitem
+	{
+	PQ_64BIT priority;
+	void *data;
+	struct _pitem *next;
+	} pitem;
 
-int _ossl_old_des_read_pw_string(char *buf,int length,const char *prompt,int verify);
-int _ossl_old_des_read_pw(char *buf,char *buff,int size,const char *prompt,int verify);
+typedef struct _pitem *piterator;
 
-#ifdef  __cplusplus
-}
-#endif
-#endif
+pitem *pitem_new(PQ_64BIT priority, void *data);
+void   pitem_free(pitem *item);
+
+pqueue pqueue_new(void);
+void   pqueue_free(pqueue pq);
+
+pitem *pqueue_insert(pqueue pq, pitem *item);
+pitem *pqueue_peek(pqueue pq);
+pitem *pqueue_pop(pqueue pq);
+pitem *pqueue_find(pqueue pq, PQ_64BIT priority);
+pitem *pqueue_iterator(pqueue pq);
+pitem *pqueue_next(piterator *iter);
+
+void   pqueue_print(pqueue pq);
+
+#endif /* ! HEADER_PQUEUE_H */
