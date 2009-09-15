@@ -76,7 +76,11 @@ int libmpq_archive_open(mpq_archive *mpq_a, unsigned char *mpq_filename) {
 
 	while (!ncnt) {
 		mpq_a->header->id = 0;
-		_lseek(mpq_a->fd, mpq_a->mpqpos, SEEK_SET);
+		#ifdef WIN32
+			_lseeki64(mpq_a->fd, mpq_a->mpqpos, SEEK_SET);
+		#else
+			lseek64(mpq_a->fd, mpq_a->mpqpos, SEEK_SET);
+		#endif
 		rb = _read(mpq_a->fd, mpq_a->header, sizeof(mpq_header));
 
 		/* if different number of bytes read, break the loop */
@@ -620,3 +624,4 @@ int libmpq_file_getdata(mpq_archive *mpq_a, mpq_hash mpq_h, const int number, un
 	free(mpq_f);
 	return success?LIBMPQ_TOOLS_SUCCESS:LIBMPQ_EFILE_CORRUPT;
 }
+
