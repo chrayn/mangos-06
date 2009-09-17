@@ -372,8 +372,8 @@ struct ItemPrototype
     uint32 ItemSet;
     uint32 MaxDurability;
     uint32 Area;
+    uint32 Map;
     uint32 BagFamily;
-    uint32 Unknown1;
     char* ScriptName;
     uint32 DisenchantID;
 };

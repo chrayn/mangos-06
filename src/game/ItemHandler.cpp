@@ -301,8 +301,8 @@ void WorldSession::HandleItemQuerySingleOpcode( WorldPacket & recv_data )
         data << pProto->ItemSet;
         data << pProto->MaxDurability;
         data << pProto->Area;
-        data << pProto->Unknown1;
-        data << pProto->Unknown1;                           // Added in 1.12.x client branch
+        data << pProto->Map;
+        data << uint32(0);                                  // Added in 1.12.x client branch
     }
     else
     {

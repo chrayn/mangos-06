@@ -118,6 +118,7 @@ pkgdata_DATA = \
 	3402_creature_onkill_reputation.sql \
 	3410_group.sql \
 	3424_command.sql \
+	001_3463_mangos.sql \
 	README
 
 ## Additional files to include when running 'make dist'
@@ -216,4 +217,5 @@ EXTRA_DIST = \
 	3402_creature_onkill_reputation.sql \
 	3410_group.sql \
 	3424_command.sql \
+	001_3463_mangos.sql \
 	README

@@ -129,7 +129,7 @@ CREATE TABLE `bugreport` (
   `type` varchar(255) NOT NULL default '',
   `content` varchar(255) NOT NULL default '',
   PRIMARY KEY  (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='Debug System';
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='Debug System' AUTO_INCREMENT=1 ;
 
 --
 -- Dumping data for table `bugreport`
@@ -371,7 +371,7 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `character_pet`;
 CREATE TABLE `character_pet` (
-  `id` int(11) unsigned NOT NULL  default '0',
+  `id` int(11) unsigned NOT NULL default '0',
   `entry` int(11) unsigned NOT NULL default '0',
   `owner` int(11) unsigned NOT NULL default '0',
   `modelid` int(11) unsigned default '0',
@@ -541,7 +541,7 @@ CREATE TABLE `character_ticket` (
   `ticket_text` varchar(255) NOT NULL default '',
   `ticket_category` int(1) NOT NULL default '0',
   PRIMARY KEY  (`ticket_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='Player System';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='Player System' AUTO_INCREMENT=1 ;
 
 --
 -- Dumping data for table `character_ticket`
@@ -600,13 +600,13 @@ CREATE TABLE `command` (
 
 /*!40000 ALTER TABLE `command` DISABLE KEYS */;
 LOCK TABLES `command` WRITE;
-INSERT INTO `command` VALUES
+INSERT INTO `command` (`name`, `security`, `help`) VALUES 
 ('acct', 0, 'Syntax: .acct\r\n\r\nDisplay the access level of your account.'),
 ('addgo', 3, 'Syntax: .addgo #id\r\n\r\nAdd a game object from game object templates to the world at your current location using the #id.\r\n\r\nNote: this is a copy of .gameobject.'),
 ('additem', 3, 'Syntax: .additem #itemid/[#itemname]/#shift-click-item-link #itemcount\r\n\r\nAdds the specified number of items of id #itemid (or exact (!) name $itemname in brackets, or link created by shift-click at item in inventory or recipe) to your or selected character inventory. If #itemcount is omitted, only one item will be added.\r\n.'),
 ('additemset', 3, 'Syntax: .additemset #itemsetid\r\n\r\nAdd items from itemset of id #itemsetid to your or selected character inventory. Will add by one example each item from itemset.'),
 ('addmove', 2, 'Syntax: .addmove #creature_guid [#waittime]\r\n\r\nAdd your current location as a waypoint for creature with guid #creature_guid. And optional add wait time.'),
-('addquest', 3, 'Syntax: .addquest #quest_id\r\n\r\nAdd to character quest log quest #quest_id. Quest started from item can\'t be added by this command but correct .additem call provided in command output.'),
+('addquest', 3, 'Syntax: .addquest #quest_id\r\n\r\nAdd to character quest log quest #quest_id. Quest started from item can''t be added by this command but correct .additem call provided in command output.'),
 ('addtele', 3, 'Syntax: .addtele $name\r\n\r\nAdd current your position to .tele command target locations list with name $name.'),
 ('AddSpawn', 2, 'Not yet implemented.'),
 ('addspw', 2, 'Syntax: .addspw #creatureid\r\n\r\nSpawn a creature by the given template id of #creatureid.'),
@@ -645,7 +645,7 @@ INSERT INTO `command` VALUES
 ('go', 3, 'Syntax: .go #position_x #position_y #position_z #mapid\r\n\r\nTeleport to the given coordinates on the specified map.'),
 ('gocreature', 2, 'Syntax: .gocreature #creature_guid\r\nTeleport your character to creature with guid #creature_guid.'),
 ('goobject', 1, 'Syntax: .goobject #object_guid\r\nTeleport your character to gameobject with guid #object_guid'),
-('goname', 1, 'Syntax: .goname $charactername\r\n\r\nTeleport to the given character. Either specify the character name or click on the character\'s portrait, e.g. when you are in a group.'),
+('goname', 1, 'Syntax: .goname $charactername\r\n\r\nTeleport to the given character. Either specify the character name or click on the character''s portrait, e.g. when you are in a group.'),
 ('goxy', 3, 'Syntax: .goxy #x #y [#mapid]\r\n\r\nTeleport player to point with (#x,#y) coordinates at ground(water) level at map #mapid or same map if #mapid not provided.'),
 ('gps', 1, 'Syntax: .gps\r\n\r\nDisplay the position information for a selected character or creature. Position information includes X, Y, Z, and orientation, map Id and zone Id'),
 ('guid', 2, 'Syntax: .guid\r\n\r\nDisplay the GUID for the selected character.'),
@@ -665,20 +665,20 @@ INSERT INTO `command` VALUES
 ('listobject', 3, 'Syntax: .listobject #gameobject_id [#max_count]\r\n\r\nOutput gameobjects with gameobject id #gameobject_id found in world. Output gameobject guids and coordinates sorted by distance from character. Will be output maximum #max_count gameobject. If #max_count not provided use 10 as default value.'),
 ('loadscripts', 3, 'Syntax: .loadscripts $scriptlibraryname\r\n\r\nUnload current and load the script library $scriptlibraryname or reload current if $scriptlibraryname omitted, in case you changed it while the server was running.'),
 ('lockaccount', 0, 'Syntax: .lockaccount [on|off]\r\n\r\nAllow login from account only from current used IP or remove this requirement.'),
-('lookupitem', 3, 'Syntax: .lookupitem $itemname\r\n\r\nLooks up an item by $itemname, and returns all matches with their Item ID\'s.'),
-('lookupitemset', 3, 'Syntax: .lookupitemset $itemname\r\n\r\nLooks up an item set by $itemname, and returns all matches with their Item set ID\'s.'),
-('lookupcreature', 3, 'Syntax: .lookupcreature $namepart\r\n\r\nLooks up a creature by $namepart, and returns all matches with their creature ID\'s.'),
-('lookupobject', 3, 'Syntax: .lookupobject $objname\r\n\r\nLooks up an gameobject by $objname, and returns all matches with their Gameobject ID\'s.'),
-('lookupquest', 3, 'Syntax: .lookupquest $namepart\r\n\r\nLooks up a quest by $namepart, and returns all matches with their quest ID\'s.'),
-('lookupskill', 3, 'Syntax: .lookupskill $$namepart\r\n\r\nLooks up a skill by $namepart, and returns all matches with their skill ID\'s.'),
-('lookupspell', 3, 'Syntax: .lookupspell $namepart\r\n\r\nLooks up a spell by $namepart, and returns all matches with their spell ID\'s.'),
+('lookupitem', 3, 'Syntax: .lookupitem $itemname\r\n\r\nLooks up an item by $itemname, and returns all matches with their Item ID''s.'),
+('lookupitemset', 3, 'Syntax: .lookupitemset $itemname\r\n\r\nLooks up an item set by $itemname, and returns all matches with their Item set ID''s.'),
+('lookupcreature', 3, 'Syntax: .lookupcreature $namepart\r\n\r\nLooks up a creature by $namepart, and returns all matches with their creature ID''s.'),
+('lookupobject', 3, 'Syntax: .lookupobject $objname\r\n\r\nLooks up an gameobject by $objname, and returns all matches with their Gameobject ID''s.'),
+('lookupquest', 3, 'Syntax: .lookupquest $namepart\r\n\r\nLooks up a quest by $namepart, and returns all matches with their quest ID''s.'),
+('lookupskill', 3, 'Syntax: .lookupskill $$namepart\r\n\r\nLooks up a skill by $namepart, and returns all matches with their skill ID''s.'),
+('lookupspell', 3, 'Syntax: .lookupspell $namepart\r\n\r\nLooks up a spell by $namepart, and returns all matches with their spell ID''s.'),
 ('lookuptele', 1, 'Syntax: .lookuptele $substring\r\n\r\nSearch and output all .tele command locations with provide $substring in name.'),
 ('maxskill', 3, 'Syntax: .maxskill\r\nSets all skills of the targeted player to their maximum values for its current level.'),
 ('Mod32Value', 3, 'Syntax: .Mod32Value #field #value\r\n\r\nAdd #value to field #field of your character.'),
 ('modify', 1, 'Syntax: .modify $parameter $value\r\n\r\nModify the value of various parameters. Use .help modify $parameter to get help on specific parameter usage.\r\n\r\nSupported parameters include hp, mana, rage, energy, money, speed, swim, scale, bit, bwalk, aspeed, faction, spell and tp.'),
-('modify aspeed', 1, 'Syntax: .modify aspeed #rate\r\n\r\nModify all speeds -run,swim,run back,swim back- of the selected player to \"normalbase speed for this move type\"*rate. If no player is selected, modify your speed.\r\n\r\n #rate may range from 0.1 to 10.'),
+('modify aspeed', 1, 'Syntax: .modify aspeed #rate\r\n\r\nModify all speeds -run,swim,run back,swim back- of the selected player to "normalbase speed for this move type"*rate. If no player is selected, modify your speed.\r\n\r\n #rate may range from 0.1 to 10.'),
 ('modify bit', 1, 'Syntax: .modify bit #field #bit\r\n\r\nToggle the #bit bit of the #field field for the selected player. If no player is selected, modify your character.'),
-('modify bwalk', 1, 'Syntax: .modify bwalk #rate\r\n\r\nModify the speed of the selected player while running backwards to \"normal walk back speed\"*rate. If no player is selected, modify your speed.\r\n\r\n #rate may range from 0.1 to 10.'),
+('modify bwalk', 1, 'Syntax: .modify bwalk #rate\r\n\r\nModify the speed of the selected player while running backwards to "normal walk back speed"*rate. If no player is selected, modify your speed.\r\n\r\n #rate may range from 0.1 to 10.'),
 ('modify energy', 1, 'Syntax: .modify energy #energy\r\n\r\nModify the energy of the selected player. If no player is selected, modify your energy.'),
 ('modify faction', 1, 'Syntax: .modify faction #factionid #flagid #npcflagid #dynamicflagid\r\n\r\nModify the faction and flags of the selected creature. Without arguments, display the faction and flags of the selected creature.'),
 ('modify money', 1, 'Syntax:\r\n.modify money #money\r\n.money #money\r\n\r\nAdd or remove money to the selected player. If no player is selected, modify your money.\r\n\r\n #gold can be negative to remove money.'),
@@ -686,22 +686,22 @@ INSERT INTO `command` VALUES
 ('modify mana', 1, 'Syntax: .modify mana #newmana\r\n\r\nModify the mana of the selected player. If no player is selected, modify your mana.'),
 ('modify rage', 1, 'Syntax: .modify rage #newrage\r\n\r\nModify the rage of the selected player. If no player is selected, modify your rage.'),
 ('modify scale', 1, ''),
-('modify speed', 1, 'Syntax:\r\n.modify speed #rate\r\n.speed #rate\r\n\r\nModify the running speed of the selected player to \"normal base run speed\"*rate. If no player is selected, modify your speed.\r\n\r\n #rate may range from 0.1 to 10.'),
+('modify speed', 1, 'Syntax:\r\n.modify speed #rate\r\n.speed #rate\r\n\r\nModify the running speed of the selected player to "normal base run speed"*rate. If no player is selected, modify your speed.\r\n\r\n #rate may range from 0.1 to 10.'),
 ('modify spell', 1, ''),
-('modify swim', 1, 'Syntax: .modify swim #rate\r\n\r\nModify the swim speed of the selected player to \"normal swim speed\"*rate. If no player is selected, modify your speed.\r\n\r\n #rate may range from 0.1 to 10.'),
+('modify swim', 1, 'Syntax: .modify swim #rate\r\n\r\nModify the swim speed of the selected player to "normal swim speed"*rate. If no player is selected, modify your speed.\r\n\r\n #rate may range from 0.1 to 10.'),
 ('money', 1, 'Syntax:\r\n.modify money #money\r\n.money #money\r\n\r\nAdd or remove money to the selected player. If no player is selected, modify your money.\r\n\r\n #gold can be negative to remove money.'),
 ('morph', 3, 'Syntax: .morph #displayid\r\n\r\nChange your current model id to #displayid.'),
 ('moveobject', 2, 'Syntax: .moveobject #goguid [#x #y #z]\r\n\r\nMove gameobject #goguid to character coordinates (or to (#x,#y,#z) coordinates if its provide).'),
 ('name', 2, 'Syntax: .name $name\r\n\r\nChange the name of the selected creature or character to $name.\r\n\r\nCommand disabled.'),
-('namego', 1, 'Syntax: .namego $charactername\r\n\r\nTeleport the given character to you. Either specify the character name or click on the player\'s portrait, e.g. when you are in a group.'),
+('namego', 1, 'Syntax: .namego $charactername\r\n\r\nTeleport the given character to you. Either specify the character name or click on the player''s portrait, e.g. when you are in a group.'),
 ('neargrave', 3, 'Syntax: .neargrave [alliance|horde]\r\n\r\nFind nearest graveyard linked to zone (or only nearest from accepts alliance or horde faction ghosts).'),
 ('NewMail', 3, 'Syntax: .NewMail #flag\r\n\r\nSend a new mail notification with flag #flag.'),
 ('npcflag', 2, 'Syntax: .npcflag #npcflag\r\n\r\nSet the NPC flags of creature template of the selected creature and selected creature to #npcflag. NPC flags will applied to all creatures of selected creature template after server restart or grid unload/load.'),
 ('npcinfo', 3, 'Syntax: .npcinfo\r\n\r\nDisplay a list of details for the selected creature.\r\n\r\nThe list includes:\r\n- GUID, Faction, NPC flags, Entry ID, Model ID,\r\n- Level,\r\n- Health (current/maximum),\n\r\n- Field flags, dynamic flags, faction template, \r\n- Position information,\r\n- and the creature type, e.g. if the creature is a vendor.'),
 ('npcinfoset', 3, 'Syntax: .npcinfoset\r\n\r\nTODO: Write me.'),
-('object', 3, 'Syntax: .object #displayid $save\r\n\r\nAdd a new object of type mailbox with the display id of #displayid to your current position. If $save is set to \'true\', save the object in the database.'),
+('object', 3, 'Syntax: .object #displayid $save\r\n\r\nAdd a new object of type mailbox with the display id of #displayid to your current position. If $save is set to ''true'', save the object in the database.'),
 ('password', 0, 'Syntax: .password $old_password $new_password $new_password\r\n\r\nChange your account password.'),
-('pinfo', 2, 'Syntax: .pinfo [$player_name] [rep]\r\n\r\nOutput account information for selected player or player find by $player_name. If \"rep\" parameter provided show reputation information for player.'),
+('pinfo', 2, 'Syntax: .pinfo [$player_name] [rep]\r\n\r\nOutput account information for selected player or player find by $player_name. If "rep" parameter provided show reputation information for player.'),
 ('playsound', 1, 'Syntax: .playsound #soundid\r\n\r\nPlay sound with #soundid.\r\nSound will be play only for you. Other players do not hear this.\r\nWarning: client may have more 5000 sounds...'),
 ('prog', 2, 'Syntax: .prog\r\n\r\nTeleport you to Programmers Island.'),
 ('QNM', 3, 'Syntax: .QNM #flag\r\n\r\nQuery next mail time with flag #flag.'),
@@ -720,7 +720,7 @@ INSERT INTO `command` VALUES
 ('showarea', 3, 'Syntax: .showarea #areaid\r\n\r\nReveal the area of #areaid to the selected character. If no character is selected, reveal this area to you.'),
 ('showhonor', 0, 'Syntax: .showhonor\r\n\r\nDisplay your honor ranking.'),
 ('shutdown', 3, 'Syntax: .shutdown seconds'),
-('speed', 1, 'Syntax:\r\n.modify speed #rate\r\n.speed #rate\r\n\r\nModify the running speed of the selected player to \"normal base run speed\"*rate. If no player is selected, modify your speed.\r\n\r\n #rate may range from 0.1 to 10.'),
+('speed', 1, 'Syntax:\r\n.modify speed #rate\r\n.speed #rate\r\n\r\nModify the running speed of the selected player to "normal base run speed"*rate. If no player is selected, modify your speed.\r\n\r\n #rate may range from 0.1 to 10.'),
 ('standstate', 3, 'Syntax: .standstate #emoteid\r\n\r\nChange the emote of your character while standing to #emoteid.'),
 ('start', 0, 'Syntax: .start\r\n\r\nTeleport you to the starting area of your character.'),
 ('subname', 2, 'Syntax: .subname $Name\r\n\r\nChange the subname of the selected creature or player to $Name.\r\n\r\nCommand disabled.'),
@@ -824,12 +824,12 @@ CREATE TABLE `creature` (
   `spawn_orientation` float NOT NULL default '0',
   `curhealth` int(11) unsigned NOT NULL default '1',
   `curmana` int(11) unsigned NOT NULL default '0',
-  `state` tinyint(3) unsigned NOT NULL default '0',
+  `DeathState` tinyint(3) unsigned NOT NULL default '0',
   `MovementType` tinyint(3) unsigned NOT NULL default '0',
   `auras` longtext,
   PRIMARY KEY  (`guid`),
   KEY `idx_map` (`map`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='Creature System';
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='Creature System' AUTO_INCREMENT=1 ;
 
 --
 -- Dumping data for table `creature`
@@ -956,7 +956,7 @@ CREATE TABLE `creature_onkill_reputation` (
   `MaxStanding2` int(1) default '0',
   `IsTeamAward2` int(1) default '0',
   `RewOnKillRepValue2` int(10) default '0',
-  PRIMARY KEY (`creature_id`)
+  PRIMARY KEY  (`creature_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='Creature OnKill Reputation gain';
 
 --
@@ -1000,7 +1000,7 @@ CREATE TABLE `creature_respawn` (
   `guid` int(11) unsigned NOT NULL default '0' COMMENT 'Global Unique Identifier',
   `respawntime` bigint(40) NOT NULL default '0',
   `instance` int(11) unsigned NOT NULL default '0',
-  PRIMARY KEY  (`guid`, `instance`)
+  PRIMARY KEY  (`guid`,`instance`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='Grid Loading System';
 
 --
@@ -1063,9 +1063,9 @@ CREATE TABLE `creature_template` (
   `equipinfo1` int(10) unsigned NOT NULL default '0',
   `equipinfo2` int(10) unsigned NOT NULL default '0',
   `equipinfo3` int(10) unsigned NOT NULL default '0',
-  `equipslot1` int(10) unsigned NOT NULL default '0',
-  `equipslot2` int(10) unsigned NOT NULL default '0',
-  `equipslot3` int(10) unsigned NOT NULL default '0',
+  `equipslot1` int(11) NOT NULL default '0',
+  `equipslot2` int(11) NOT NULL default '0',
+  `equipslot3` int(11) NOT NULL default '0',
   `lootid` int(10) unsigned NOT NULL default '0',
   `pickpocketloot` int(10) unsigned NOT NULL default '0',
   `skinloot` int(10) unsigned NOT NULL default '0',
@@ -1186,7 +1186,7 @@ CREATE TABLE `game_tele` (
   `map` int(11) unsigned NOT NULL default '0',
   `name` varchar(100) NOT NULL default '',
   PRIMARY KEY  (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='Tele Command';
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='Tele Command' AUTO_INCREMENT=1 ;
 
 --
 -- Dumping data for table `game_tele`
@@ -1252,7 +1252,7 @@ CREATE TABLE `gameobject` (
   `animprogress` int(11) unsigned NOT NULL default '0',
   `dynflags` int(11) unsigned NOT NULL default '0',
   PRIMARY KEY  (`guid`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Gameobject System';
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Gameobject System' AUTO_INCREMENT=1 ;
 
 --
 -- Dumping data for table `gameobject`
@@ -1368,7 +1368,7 @@ CREATE TABLE `gameobject_respawn` (
   `guid` int(11) unsigned NOT NULL default '0' COMMENT 'Global Unique Identifier',
   `respawntime` bigint(40) NOT NULL default '0',
   `instance` int(11) unsigned NOT NULL default '0',
-  PRIMARY KEY  (`guid`, `instance`)
+  PRIMARY KEY  (`guid`,`instance`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='Grid Loading System';
 
 --
@@ -1424,9 +1424,9 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `group`;
 CREATE TABLE `group` (
-  `leaderGuid` int(11) NOT NULL,
+  `leaderGuid` int(20) NOT NULL,
   `lootMethod` tinyint(4) NOT NULL,
-  `looterGuid` int(11) NOT NULL,
+  `looterGuid` int(20) NOT NULL,
   `icon1` bigint(20) NOT NULL,
   `icon2` bigint(20) NOT NULL,
   `icon3` bigint(20) NOT NULL,
@@ -1435,7 +1435,7 @@ CREATE TABLE `group` (
   `icon6` bigint(20) NOT NULL,
   `icon7` bigint(20) NOT NULL,
   `icon8` bigint(20) NOT NULL,
-  `isRaid` TINYINT( 1 ) NOT NULL,
+  `isRaid` tinyint(1) NOT NULL,
   PRIMARY KEY  (`leaderGuid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Groups';
 
@@ -1455,8 +1455,8 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `group_member`;
 CREATE TABLE `group_member` (
-  `leaderGuid` int(11) NOT NULL,
-  `memberGuid` int(11) NOT NULL,
+  `leaderGuid` int(20) NOT NULL,
+  `memberGuid` int(20) NOT NULL,
   `assistant` tinyint(1) NOT NULL,
   `subgroup` smallint(6) NOT NULL,
   PRIMARY KEY  (`leaderGuid`,`memberGuid`)
@@ -1481,11 +1481,11 @@ CREATE TABLE `guild` (
   `guildid` int(6) unsigned NOT NULL default '0',
   `name` varchar(255) NOT NULL default '',
   `leaderguid` int(6) unsigned NOT NULL default '0',
-  `EmblemStyle` int(5) unsigned NOT NULL default '0',
-  `EmblemColor` int(5) unsigned NOT NULL default '0',
-  `BorderStyle` int(5) unsigned NOT NULL default '0',
-  `BorderColor` int(5) unsigned NOT NULL default '0',
-  `BackgroundColor` int(5) unsigned NOT NULL default '0',
+  `EmblemStyle` int(5) NOT NULL default '0',
+  `EmblemColor` int(5) NOT NULL default '0',
+  `BorderStyle` int(5) NOT NULL default '0',
+  `BorderColor` int(5) NOT NULL default '0',
+  `BackgroundColor` int(5) NOT NULL default '0',
   `info` text NOT NULL,
   `MOTD` varchar(255) NOT NULL default '',
   `createdate` datetime default NULL,
@@ -1844,8 +1844,8 @@ CREATE TABLE `item_template` (
   `itemset` int(30) unsigned NOT NULL default '0',
   `MaxDurability` int(30) unsigned NOT NULL default '0',
   `area` int(30) unsigned NOT NULL default '0',
+  `Map` int(30) unsigned NOT NULL default '0',
   `BagFamily` tinyint(3) unsigned NOT NULL default '0',
-  `Unknown1` int(30) unsigned NOT NULL default '0',
   `ScriptName` varchar(100) NOT NULL default '',
   `DisenchantID` int(11) unsigned NOT NULL default '0',
   PRIMARY KEY  (`entry`),
@@ -1859,7 +1859,7 @@ CREATE TABLE `item_template` (
 
 /*!40000 ALTER TABLE `item_template` DISABLE KEYS */;
 LOCK TABLES `item_template` WRITE;
-INSERT INTO `item_template` VALUES
+INSERT INTO `item_template` (`entry`, `class`, `subclass`, `name`, `name2`, `name3`, `name4`, `displayid`, `Quality`, `Flags`, `BuyCount`, `BuyPrice`, `SellPrice`, `InventoryType`, `AllowableClass`, `AllowableRace`, `ItemLevel`, `RequiredLevel`, `RequiredSkill`, `RequiredSkillRank`, `requiredspell`, `requiredhonorrank`, `RequiredCityRank`, `RequiredReputationFaction`, `RequiredReputationRank`, `maxcount`, `stackable`, `ContainerSlots`, `stat_type1`, `stat_value1`, `stat_type2`, `stat_value2`, `stat_type3`, `stat_value3`, `stat_type4`, `stat_value4`, `stat_type5`, `stat_value5`, `stat_type6`, `stat_value6`, `stat_type7`, `stat_value7`, `stat_type8`, `stat_value8`, `stat_type9`, `stat_value9`, `stat_type10`, `stat_value10`, `dmg_min1`, `dmg_max1`, `dmg_type1`, `dmg_min2`, `dmg_max2`, `dmg_type2`, `dmg_min3`, `dmg_max3`, `dmg_type3`, `dmg_min4`, `dmg_max4`, `dmg_type4`, `dmg_min5`, `dmg_max5`, `dmg_type5`, `armor`, `holy_res`, `fire_res`, `nature_res`, `frost_res`, `shadow_res`, `arcane_res`, `delay`, `ammo_type`, `RangedModRange`, `spellid_1`, `spelltrigger_1`, `spellcharges_1`, `spellcooldown_1`, `spellcategory_1`, `spellcategorycooldown_1`, `spellid_2`, `spelltrigger_2`, `spellcharges_2`, `spellcooldown_2`, `spellcategory_2`, `spellcategorycooldown_2`, `spellid_3`, `spelltrigger_3`, `spellcharges_3`, `spellcooldown_3`, `spellcategory_3`, `spellcategorycooldown_3`, `spellid_4`, `spelltrigger_4`, `spellcharges_4`, `spellcooldown_4`, `spellcategory_4`, `spellcategorycooldown_4`, `spellid_5`, `spelltrigger_5`, `spellcharges_5`, `spellcooldown_5`, `spellcategory_5`, `spellcategorycooldown_5`, `bonding`, `description`, `PageText`, `LanguageID`, `PageMaterial`, `startquest`, `lockid`, `Material`, `sheath`, `Extra`, `block`, `itemset`, `MaxDurability`, `area`, `Map`, `BagFamily`, `ScriptName`, `DisenchantID`) VALUES
 (65020, 0, 0, 'Tough Jerky', 'Tough Jerky', 'Tough Jerky', 'Tough Jerky', 2473, 1, 0, 6, 25, 1, 0, 2047, 255, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 433, 0, -1, 0, 11, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
 (65021, 0, 0, 'Refreshing Spring Water', 'Refreshing Spring Water', 'Refreshing Spring Water', 'Refreshing Spring Water', 18084, 1, 0, 6, 25, 1, 0, 2047, 255, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 430, 0, -1, 0, 59, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
 (65022, 0, 0, 'Darnassian Bleu', 'Darnassian Bleu', 'Darnassian Bleu', 'Darnassian Bleu', 6353, 1, 0, 6, 25, 1, 0, 2047, 255, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 433, 0, -1, 0, 11, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
@@ -1869,9 +1869,9 @@ INSERT INTO `item_template` VALUES
 (65026, 0, 0, 'Tough Hunk of Bread', 'Tough Hunk of Bread', 'Tough Hunk of Bread', 'Tough Hunk of Bread', 6399, 1, 0, 6, 25, 1, 0, 2047, 255, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 433, 0, -1, 0, 11, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
 (65027, 0, 0, 'Forest Mushroom Cap', 'Forest Mushroom Cap', 'Forest Mushroom Cap', 'Forest Mushroom Cap', 15852, 1, 0, 6, 25, 1, 0, 2047, 255, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 433, 0, -1, 0, 11, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
 (25, 2, 7, 'Worn Shortsword', 'Worn Shortsword', 'Worn Shortsword', 'Worn Shortsword', 1542, 1, 0, 1, 35, 7, 21, 32767, 511, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1900, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 1, 0, 0, 0, 1, 3, 0, 0, 0, 20, 0, 0, 0, 'internalItemHandler', 0),
-(39, 4, 1, 'Recruit\'s Pants', 'Recruit\'s Pants', 'Recruit\'s Pants', 'Recruit\'s Pants', 9892, 0, 0, 1, 5, 1, 7, 32767, 511, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0),
-(40, 4, 0, 'Recruit\'s Boots', 'Recruit\'s Boots', 'Recruit\'s Boots', 'Recruit\'s Boots', 10141, 1, 0, 1, 4, 1, 8, 32767, 511, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
-(38, 4, 0, 'Recruit\'s Shirt', 'Recruit\'s Shirt', 'Recruit\'s Shirt', 'Recruit\'s Shirt', 9891, 1, 0, 1, 1, 1, 4, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
+(39, 4, 1, 'Recruit''s Pants', 'Recruit''s Pants', 'Recruit''s Pants', 'Recruit''s Pants', 9892, 0, 0, 1, 5, 1, 7, 32767, 511, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0),
+(40, 4, 0, 'Recruit''s Boots', 'Recruit''s Boots', 'Recruit''s Boots', 'Recruit''s Boots', 10141, 1, 0, 1, 4, 1, 8, 32767, 511, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
+(38, 4, 0, 'Recruit''s Shirt', 'Recruit''s Shirt', 'Recruit''s Shirt', 'Recruit''s Shirt', 9891, 1, 0, 1, 1, 1, 4, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
 (2362, 4, 6, 'Worn Wooden Shield', 'Worn Wooden Shield', 'Worn Wooden Shield', 'Worn Wooden Shield', 18730, 0, 0, 1, 7, 1, 14, 32767, 511, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 1, 4, 0, 1, 0, 20, 0, 0, 0, 'internalItemHandler', 0),
 (6948, 15, 0, 'Hearthstone', 'Hearthstone', 'Hearthstone', 'Hearthstone', 6418, 1, 64, 1, 0, 0, 0, 32767, 511, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8690, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, '', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
 (14646, 12, 0, 'Northshire Gift Voucher', 'Northshire Gift Voucher', 'Northshire Gift Voucher', 'Northshire Gift Voucher', 18499, 1, 0, 1, 0, 0, 0, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, '', 0, 0, 0, 5805, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
@@ -1880,40 +1880,40 @@ INSERT INTO `item_template` VALUES
 (14649, 12, 0, 'Valley of Trials Gift Voucher', 'Valley of Trials Gift Voucher', 'Valley of Trials Gift Voucher', 'Valley of Trials Gift Voucher', 18499, 1, 0, 1, 0, 0, 0, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, '', 0, 0, 0, 5843, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
 (14650, 12, 0, 'Camp Narache Gift Voucher', 'Camp Narache Gift Voucher', 'Camp Narache Gift Voucher', 'Camp Narache Gift Voucher', 18499, 1, 0, 1, 0, 0, 0, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, '', 0, 0, 0, 5844, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
 (14651, 12, 0, 'Deathknell Gift Voucher', 'Deathknell Gift Voucher', 'Deathknell Gift Voucher', 'Deathknell Gift Voucher', 18499, 1, 0, 1, 0, 0, 0, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, '', 0, 0, 0, 5847, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
-(43, 4, 0, 'Squire\'s Boots', 'Squire\'s Boots', 'Squire\'s Boots', 'Squire\'s Boots', 10272, 1, 0, 1, 4, 1, 8, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
-(44, 4, 1, 'Squire\'s Pants', 'Squire\'s Pants', 'Squire\'s Pants', 'Squire\'s Pants', 9937, 0, 0, 1, 4, 1, 7, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0),
-(45, 4, 0, 'Squire\'s Shirt', 'Squire\'s Shirt', 'Squire\'s Shirt', 'Squire\'s Shirt', 3265, 1, 0, 1, 1, 1, 4, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
-(47, 4, 0, 'Footpad\'s Shoes', 'Footpad\'s Shoes', 'Footpad\'s Shoes', 'Footpad\'s Shoes', 9915, 1, 0, 1, 4, 1, 8, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
-(48, 4, 1, 'Footpad\'s Pants', 'Footpad\'s Pants', 'Footpad\'s Pants', 'Footpad\'s Pants', 9913, 0, 0, 1, 4, 1, 7, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0),
-(49, 4, 0, 'Footpad\'s Shirt', 'Footpad\'s Shirt', 'Footpad\'s Shirt', 'Footpad\'s Shirt', 9906, 1, 0, 1, 1, 1, 4, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
-(51, 4, 0, 'Neophyte\'s Boots', 'Neophyte\'s Boots', 'Neophyte\'s Boots', 'Neophyte\'s Boots', 9946, 1, 0, 1, 5, 1, 8, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
-(52, 4, 1, 'Neophyte\'s Pants', 'Neophyte\'s Pants', 'Neophyte\'s Pants', 'Neophyte\'s Pants', 9945, 0, 0, 1, 5, 1, 7, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0),
-(53, 4, 0, 'Neophyte\'s Shirt', 'Neophyte\'s Shirt', 'Neophyte\'s Shirt', 'Neophyte\'s Shirt', 9944, 1, 0, 1, 1, 1, 4, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
-(55, 4, 0, 'Apprentice\'s Boots', 'Apprentice\'s Boots', 'Apprentice\'s Boots', 'Apprentice\'s Boots', 9929, 1, 0, 1, 5, 1, 8, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
-(56, 4, 1, 'Apprentice\'s Robe', 'Apprentice\'s Robe', 'Apprentice\'s Robe', 'Apprentice\'s Robe', 12647, 0, 0, 1, 5, 1, 20, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 35, 0, 0, 0, 'internalItemHandler', 0),
-(57, 4, 1, 'Acolyte\'s Robe', 'Acolyte\'s Robe', 'Acolyte\'s Robe', 'Acolyte\'s Robe', 12645, 0, 0, 1, 5, 1, 20, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 35, 0, 0, 0, 'internalItemHandler', 0),
-(59, 4, 0, 'Acolyte\'s Shoes', 'Acolyte\'s Shoes', 'Acolyte\'s Shoes', 'Acolyte\'s Shoes', 3261, 1, 0, 1, 5, 1, 8, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
+(43, 4, 0, 'Squire''s Boots', 'Squire''s Boots', 'Squire''s Boots', 'Squire''s Boots', 10272, 1, 0, 1, 4, 1, 8, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
+(44, 4, 1, 'Squire''s Pants', 'Squire''s Pants', 'Squire''s Pants', 'Squire''s Pants', 9937, 0, 0, 1, 4, 1, 7, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0),
+(45, 4, 0, 'Squire''s Shirt', 'Squire''s Shirt', 'Squire''s Shirt', 'Squire''s Shirt', 3265, 1, 0, 1, 1, 1, 4, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
+(47, 4, 0, 'Footpad''s Shoes', 'Footpad''s Shoes', 'Footpad''s Shoes', 'Footpad''s Shoes', 9915, 1, 0, 1, 4, 1, 8, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
+(48, 4, 1, 'Footpad''s Pants', 'Footpad''s Pants', 'Footpad''s Pants', 'Footpad''s Pants', 9913, 0, 0, 1, 4, 1, 7, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0),
+(49, 4, 0, 'Footpad''s Shirt', 'Footpad''s Shirt', 'Footpad''s Shirt', 'Footpad''s Shirt', 9906, 1, 0, 1, 1, 1, 4, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
+(51, 4, 0, 'Neophyte''s Boots', 'Neophyte''s Boots', 'Neophyte''s Boots', 'Neophyte''s Boots', 9946, 1, 0, 1, 5, 1, 8, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
+(52, 4, 1, 'Neophyte''s Pants', 'Neophyte''s Pants', 'Neophyte''s Pants', 'Neophyte''s Pants', 9945, 0, 0, 1, 5, 1, 7, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0),
+(53, 4, 0, 'Neophyte''s Shirt', 'Neophyte''s Shirt', 'Neophyte''s Shirt', 'Neophyte''s Shirt', 9944, 1, 0, 1, 1, 1, 4, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
+(55, 4, 0, 'Apprentice''s Boots', 'Apprentice''s Boots', 'Apprentice''s Boots', 'Apprentice''s Boots', 9929, 1, 0, 1, 5, 1, 8, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
+(56, 4, 1, 'Apprentice''s Robe', 'Apprentice''s Robe', 'Apprentice''s Robe', 'Apprentice''s Robe', 12647, 0, 0, 1, 5, 1, 20, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 35, 0, 0, 0, 'internalItemHandler', 0),
+(57, 4, 1, 'Acolyte''s Robe', 'Acolyte''s Robe', 'Acolyte''s Robe', 'Acolyte''s Robe', 12645, 0, 0, 1, 5, 1, 20, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 35, 0, 0, 0, 'internalItemHandler', 0),
+(59, 4, 0, 'Acolyte''s Shoes', 'Acolyte''s Shoes', 'Acolyte''s Shoes', 'Acolyte''s Shoes', 3261, 1, 0, 1, 5, 1, 8, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
 (35, 2, 10, 'Bent Staff', 'Bent Staff', 'Bent Staff', 'Bent Staff', 472, 1, 0, 1, 47, 9, 17, 2047, 255, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2900, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0),
 (36, 2, 4, 'Worn Mace', 'Worn Mace', 'Worn Mace', 'Worn Mace', 5194, 1, 0, 1, 38, 7, 21, 2047, 255, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1900, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 2, 3, 0, 0, 0, 20, 0, 0, 0, 'internalItemHandler', 0),
 (37, 2, 0, 'Worn Axe', 'Worn Axe', 'Worn Axe', 'Worn Axe', 14029, 1, 0, 1, 38, 7, 21, 2047, 255, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 1, 3, 0, 0, 0, 20, 0, 0, 0, 'internalItemHandler', 0),
 (2361, 2, 5, 'Battleworn Hammer', 'Battleworn Hammer', 'Battleworn Hammer', 'Battleworn Hammer', 8690, 1, 0, 1, 45, 9, 17, 2047, 255, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2900, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 2, 1, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0),
 (2092, 2, 15, 'Worn Dagger', 'Worn Dagger', 'Worn Dagger', 'Worn Dagger', 6442, 1, 0, 1, 35, 7, 13, 2047, 255, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1600, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 1, 3, 0, 0, 0, 16, 0, 0, 0, 'internalItemHandler', 0),
-(6096, 4, 0, 'Apprentice\'s Shirt', 'Apprentice\'s Shirt', 'Apprentice\'s Shirt', 'Apprentice\'s Shirt', 2163, 1, 0, 1, 1, 1, 4, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
-(6097, 4, 0, 'Acolyte\'s Shirt', 'Acolyte\'s Shirt', 'Acolyte\'s Shirt', 'Acolyte\'s Shirt', 2470, 1, 0, 1, 1, 1, 4, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
-(6098, 4, 1, 'Neophyte\'s Robe', 'Neophyte\'s Robe', 'Neophyte\'s Robe', 'Neophyte\'s Robe', 12679, 0, 0, 1, 4, 1, 20, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 35, 0, 0, 0, 'internalItemHandler', 0),
-(1395, 4, 1, 'Apprentice\'s Pants', 'Apprentice\'s Pants', 'Apprentice\'s Pants', 'Apprentice\'s Pants', 9924, 0, 0, 1, 5, 1, 7, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0),
-(1396, 4, 1, 'Acolyte\'s Pants', 'Acolyte\'s Pants', 'Acolyte\'s Pants', 'Acolyte\'s Pants', 3260, 0, 0, 1, 4, 1, 7, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0),
-(6125, 4, 0, 'Brawler\'s Harness', 'Brawler\'s Harness', 'Brawler\'s Harness', 'Brawler\'s Harness', 9995, 1, 0, 1, 1, 1, 4, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
-(6126, 4, 1, 'Trapper\'s Pants', 'Trapper\'s Pants', 'Trapper\'s Pants', 'Trapper\'s Pants', 10002, 0, 0, 1, 5, 1, 7, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0),
-(6127, 4, 0, 'Trapper\'s Boots', 'Trapper\'s Boots', 'Trapper\'s Boots', 'Trapper\'s Boots', 10003, 1, 0, 1, 5, 1, 8, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
-(6129, 4, 1, 'Acolyte\'s Robe', 'Acolyte\'s Robe', 'Acolyte\'s Robe', 'Acolyte\'s Robe', 12646, 0, 0, 1, 5, 1, 20, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 35, 0, 0, 0, 'internalItemHandler', 0),
-(139, 4, 1, 'Brawler\'s Pants', 'Brawler\'s Pants', 'Brawler\'s Pants', 'Brawler\'s Pants', 9988, 0, 0, 1, 4, 1, 7, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0),
-(140, 4, 0, 'Brawler\'s Boots', 'Brawler\'s Boots', 'Brawler\'s Boots', 'Brawler\'s Boots', 9992, 1, 0, 1, 4, 1, 8, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
-(127, 4, 0, 'Trapper\'s Shirt', 'Trapper\'s Shirt', 'Trapper\'s Shirt', 'Trapper\'s Shirt', 9996, 1, 0, 1, 1, 1, 4, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
+(6096, 4, 0, 'Apprentice''s Shirt', 'Apprentice''s Shirt', 'Apprentice''s Shirt', 'Apprentice''s Shirt', 2163, 1, 0, 1, 1, 1, 4, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
+(6097, 4, 0, 'Acolyte''s Shirt', 'Acolyte''s Shirt', 'Acolyte''s Shirt', 'Acolyte''s Shirt', 2470, 1, 0, 1, 1, 1, 4, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
+(6098, 4, 1, 'Neophyte''s Robe', 'Neophyte''s Robe', 'Neophyte''s Robe', 'Neophyte''s Robe', 12679, 0, 0, 1, 4, 1, 20, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 35, 0, 0, 0, 'internalItemHandler', 0),
+(1395, 4, 1, 'Apprentice''s Pants', 'Apprentice''s Pants', 'Apprentice''s Pants', 'Apprentice''s Pants', 9924, 0, 0, 1, 5, 1, 7, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0),
+(1396, 4, 1, 'Acolyte''s Pants', 'Acolyte''s Pants', 'Acolyte''s Pants', 'Acolyte''s Pants', 3260, 0, 0, 1, 4, 1, 7, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0),
+(6125, 4, 0, 'Brawler''s Harness', 'Brawler''s Harness', 'Brawler''s Harness', 'Brawler''s Harness', 9995, 1, 0, 1, 1, 1, 4, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
+(6126, 4, 1, 'Trapper''s Pants', 'Trapper''s Pants', 'Trapper''s Pants', 'Trapper''s Pants', 10002, 0, 0, 1, 5, 1, 7, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0),
+(6127, 4, 0, 'Trapper''s Boots', 'Trapper''s Boots', 'Trapper''s Boots', 'Trapper''s Boots', 10003, 1, 0, 1, 5, 1, 8, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
+(6129, 4, 1, 'Acolyte''s Robe', 'Acolyte''s Robe', 'Acolyte''s Robe', 'Acolyte''s Robe', 12646, 0, 0, 1, 5, 1, 20, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 35, 0, 0, 0, 'internalItemHandler', 0),
+(139, 4, 1, 'Brawler''s Pants', 'Brawler''s Pants', 'Brawler''s Pants', 'Brawler''s Pants', 9988, 0, 0, 1, 4, 1, 7, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0),
+(140, 4, 0, 'Brawler''s Boots', 'Brawler''s Boots', 'Brawler''s Boots', 'Brawler''s Boots', 9992, 1, 0, 1, 4, 1, 8, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
+(127, 4, 0, 'Trapper''s Shirt', 'Trapper''s Shirt', 'Trapper''s Shirt', 'Trapper''s Shirt', 9996, 1, 0, 1, 1, 1, 4, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
 (120, 4, 1, 'Thug Pants', 'Thug Pants', 'Thug Pants', 'Thug Pants', 10006, 0, 0, 1, 4, 1, 7, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0),
 (121, 4, 0, 'Thug Boots', 'Thug Boots', 'Thug Boots', 'Thug Boots', 10008, 1, 0, 1, 4, 1, 8, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
-(147, 4, 1, 'Rugged Trapper\'s Pants', 'Rugged Trapper\'s Pants', 'Rugged Trapper\'s Pants', 'Rugged Trapper\'s Pants', 9975, 0, 0, 1, 5, 1, 7, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0),
-(148, 4, 0, 'Rugged Trapper\'s Shirt', 'Rugged Trapper\'s Shirt', 'Rugged Trapper\'s Shirt', 'Rugged Trapper\'s Shirt', 9976, 1, 0, 1, 1, 1, 4, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
+(147, 4, 1, 'Rugged Trapper''s Pants', 'Rugged Trapper''s Pants', 'Rugged Trapper''s Pants', 'Rugged Trapper''s Pants', 9975, 0, 0, 1, 5, 1, 7, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0),
+(148, 4, 0, 'Rugged Trapper''s Shirt', 'Rugged Trapper''s Shirt', 'Rugged Trapper''s Shirt', 'Rugged Trapper''s Shirt', 9976, 1, 0, 1, 1, 1, 4, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
 (153, 4, 2, 'Primitive Kilt', 'Primitive Kilt', 'Primitive Kilt', 'Primitive Kilt', 10050, 0, 0, 1, 5, 1, 7, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 14, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 30, 0, 0, 0, 'internalItemHandler', 0),
 (154, 4, 0, 'Primitive Mantle', 'Primitive Mantle', 'Primitive Mantle', 'Primitive Mantle', 10058, 1, 0, 1, 1, 1, 4, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
 (2101, 1, 2, 'Light Quiver', 'Light Quiver', 'Light Quiver', 'Light Quiver', 21328, 1, 0, 1, 4, 1, 18, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 14824, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, '', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
@@ -1921,17 +1921,17 @@ INSERT INTO `item_template` VALUES
 (2105, 4, 0, 'Thug Shirt', 'Thug Shirt', 'Thug Shirt', 'Thug Shirt', 10005, 1, 0, 1, 5, 1, 4, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
 (2504, 2, 2, 'Worn Shortbow', 'Worn Shortbow', 'Worn Shortbow', 'Worn Shortbow', 8106, 1, 0, 1, 29, 5, 15, 2047, 255, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2300, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 20, 0, 0, 0, 'internalItemHandler', 0),
 (2508, 2, 3, 'Old Blunderbuss', 'Old Blunderbuss', 'Old Blunderbuss', 'Old Blunderbuss', 6606, 1, 0, 1, 27, 5, 26, 2047, 255, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2300, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 20, 0, 0, 0, 'internalItemHandler', 0),
-(2512, 6, 2, 'Rough Arrow', 'Rough Arrow', 'Rough Arrow', 'Rough Arrow', 5996, 1, 0, 1, 10, 0, 24, 2047, 255, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1, 0, 'internalItemHandler', 0),
-(2516, 6, 3, 'Light Shot', 'Light Shot', 'Light Shot', 'Light Shot', 5998, 1, 0, 1, 10, 0, 24, 2047, 255, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 2, 0, 'internalItemHandler', 0),
+(2512, 6, 2, 'Rough Arrow', 'Rough Arrow', 'Rough Arrow', 'Rough Arrow', 5996, 1, 0, 1, 10, 0, 24, 2047, 255, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 'internalItemHandler', 0),
+(2516, 6, 3, 'Light Shot', 'Light Shot', 'Light Shot', 'Light Shot', 5998, 1, 0, 1, 10, 0, 24, 2047, 255, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 2, 'internalItemHandler', 0),
 (3661, 2, 10, 'Handcrafted Staff', 'Handcrafted Staff', 'Handcrafted Staff', 'Handcrafted Staff', 18530, 1, 0, 1, 45, 9, 17, 2047, 255, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2900, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0),
-(6119, 4, 1, 'Neophyte\'s Robe', 'Neophyte\'s Robe', 'Neophyte\'s Robe', 'Neophyte\'s Robe', 12681, 0, 0, 1, 4, 1, 20, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 35, 0, 0, 0, 'internalItemHandler', 0),
-(6123, 4, 1, 'Novice\'s Robe', 'Novice\'s Robe', 'Novice\'s Robe', 'Novice\'s Robe', 12683, 0, 0, 1, 4, 1, 20, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 35, 0, 0, 0, 'internalItemHandler', 0),
-(6124, 4, 1, 'Novice\'s Pants', 'Novice\'s Pants', 'Novice\'s Pants', 'Novice\'s Pants', 9987, 0, 0, 1, 5, 1, 7, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0),
+(6119, 4, 1, 'Neophyte''s Robe', 'Neophyte''s Robe', 'Neophyte''s Robe', 'Neophyte''s Robe', 12681, 0, 0, 1, 4, 1, 20, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 35, 0, 0, 0, 'internalItemHandler', 0),
+(6123, 4, 1, 'Novice''s Robe', 'Novice''s Robe', 'Novice''s Robe', 'Novice''s Robe', 12683, 0, 0, 1, 4, 1, 20, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 35, 0, 0, 0, 'internalItemHandler', 0),
+(6124, 4, 1, 'Novice''s Pants', 'Novice''s Pants', 'Novice''s Pants', 'Novice''s Pants', 9987, 0, 0, 1, 5, 1, 7, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0),
 (6134, 4, 0, 'Primitive Mantle', 'Primitive Mantle', 'Primitive Mantle', 'Primitive Mantle', 10108, 1, 0, 1, 1, 1, 4, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 'internalItemHandler', 0),
 (6135, 4, 2, 'Primitive Kilt', 'Primitive Kilt', 'Primitive Kilt', 'Primitive Kilt', 10109, 0, 0, 1, 5, 1, 7, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 14, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 30, 0, 0, 0, 'internalItemHandler', 0),
-(6139, 4, 1, 'Novice\'s Robe', 'Novice\'s Robe', 'Novice\'s Robe', 'Novice\'s Robe', 12684, 0, 0, 1, 4, 1, 20, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 35, 0, 0, 0, 'internalItemHandler', 0),
-(6140, 4, 1, 'Apprentice\'s Robe', 'Apprentice\'s Robe', 'Apprentice\'s Robe', 'Apprentice\'s Robe', 12649, 0, 0, 1, 4, 1, 20, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 35, 0, 0, 0, 'internalItemHandler', 0),
-(6144, 4, 1, 'Neophyte\'s Robe', 'Neophyte\'s Robe', 'Neophyte\'s Robe', 'Neophyte\'s Robe', 12680, 0, 0, 1, 5, 1, 20, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 35, 0, 0, 0, 'internalItemHandler', 0),
+(6139, 4, 1, 'Novice''s Robe', 'Novice''s Robe', 'Novice''s Robe', 'Novice''s Robe', 12684, 0, 0, 1, 4, 1, 20, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 35, 0, 0, 0, 'internalItemHandler', 0),
+(6140, 4, 1, 'Apprentice''s Robe', 'Apprentice''s Robe', 'Apprentice''s Robe', 'Apprentice''s Robe', 12649, 0, 0, 1, 4, 1, 20, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 35, 0, 0, 0, 'internalItemHandler', 0),
+(6144, 4, 1, 'Neophyte''s Robe', 'Neophyte''s Robe', 'Neophyte''s Robe', 'Neophyte''s Robe', 12680, 0, 0, 1, 5, 1, 20, 2047, 255, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 35, 0, 0, 0, 'internalItemHandler', 0),
 (12282, 2, 1, 'Worn Battleaxe', 'Worn Battleaxe', 'Worn Battleaxe', 'Worn Battleaxe', 22291, 1, 0, 1, 43, 8, 17, 2047, 255, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2900, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 25, 0, 0, 0, 'internalItemHandler', 0);
 UNLOCK TABLES;
 /*!40000 ALTER TABLE `item_template` ENABLE KEYS */;
@@ -2269,7 +2269,7 @@ CREATE TABLE `pet_name_generation` (
   `entry` int(11) NOT NULL default '0',
   `half` int(11) NOT NULL default '0',
   PRIMARY KEY  (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=199 DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=199 ;
 
 --
 -- Dumping data for table `pet_name_generation`
@@ -4960,7 +4960,7 @@ CREATE TABLE `playercreateinfo` (
 
 /*!40000 ALTER TABLE `playercreateinfo` DISABLE KEYS */;
 LOCK TABLES `playercreateinfo` WRITE;
-INSERT INTO `playercreateinfo` VALUES
+INSERT INTO `playercreateinfo` (`race`, `class`, `map`, `zone`, `position_x`, `position_y`, `position_z`, `displayID`) VALUES 
 (1, 1, 0, 12, -8949, -132, 84, 49),
 (1, 2, 0, 12, -8949, -132, 84, 49),
 (1, 4, 0, 12, -8949, -132, 84, 49),
@@ -5026,7 +5026,7 @@ CREATE TABLE `playercreateinfo_action` (
 
 /*!40000 ALTER TABLE `playercreateinfo_action` DISABLE KEYS */;
 LOCK TABLES `playercreateinfo_action` WRITE;
-INSERT INTO `playercreateinfo_action` VALUES
+INSERT INTO `playercreateinfo_action` (`race`, `class`, `button`, `action`, `type`, `misc`) VALUES 
 (1, 1, 1, 78, 0, 0),
 (1, 1, 0, 6603, 0, 0),
 (1, 1, 11, 65020, 128, 0),
@@ -5239,7 +5239,7 @@ CREATE TABLE `playercreateinfo_item` (
 
 /*!40000 ALTER TABLE `playercreateinfo_item` DISABLE KEYS */;
 LOCK TABLES `playercreateinfo_item` WRITE;
-INSERT INTO `playercreateinfo_item` VALUES
+INSERT INTO `playercreateinfo_item` (`race`, `class`, `itemid`, `amount`) VALUES 
 (1, 1, 38, 1),
 (1, 1, 39, 1),
 (1, 1, 40, 1),
@@ -5599,7 +5599,7 @@ CREATE TABLE `playercreateinfo_skill` (
 
 /*!40000 ALTER TABLE `playercreateinfo_skill` DISABLE KEYS */;
 LOCK TABLES `playercreateinfo_skill` WRITE;
-INSERT INTO `playercreateinfo_skill` VALUES
+INSERT INTO `playercreateinfo_skill` (`race`, `class`, `Skill`, `Note`) VALUES 
 (1, 1, 183, 'GENERIC (DND)'),
 (1, 2, 183, 'GENERIC (DND)'),
 (1, 4, 183, 'GENERIC (DND)'),
@@ -5769,7 +5769,7 @@ CREATE TABLE `playercreateinfo_spell` (
 
 /*!40000 ALTER TABLE `playercreateinfo_spell` DISABLE KEYS */;
 LOCK TABLES `playercreateinfo_spell` WRITE;
-INSERT INTO `playercreateinfo_spell` VALUES
+INSERT INTO `playercreateinfo_spell` (`race`, `class`, `Spell`, `Note`, `Active`) VALUES 
 (1, 1, 2382, 'Generic', 1),
 (1, 1, 3365, 'Opening', 1),
 (1, 1, 3050, 'Detect', 1),
@@ -7296,17 +7296,16 @@ INSERT INTO `playercreateinfo_spell` VALUES
 (7, 1, 7381, 'Berserker Stance Passive', 0),
 (8, 1, 7376, 'Defensive Stance Passive', 0),
 (8, 1, 7381, 'Berserker Stance Passive', 0),
-('1', '1', '21156', 'Battle Stance Passive', 0),
-('2', '1', '21156', 'Battle Stance Passive', 0),
-('3', '1', '21156', 'Battle Stance Passive', 0),
-('4', '1', '21156', 'Battle Stance Passive', 0),
-('5', '1', '21156', 'Battle Stance Passive', 0),
-('6', '1', '21156', 'Battle Stance Passive', 0),
-('7', '1', '21156', 'Battle Stance Passive', 0),
-('8', '1', '21156', 'Battle Stance Passive', 0),
-('4', '11', '21178', 'Bear Form (Passive2)', 0),
-('6', '11', '21178', 'Bear Form (Passive2)', 0);
-
+(1, 1, 21156, 'Battle Stance Passive', 0),
+(2, 1, 21156, 'Battle Stance Passive', 0),
+(3, 1, 21156, 'Battle Stance Passive', 0),
+(4, 1, 21156, 'Battle Stance Passive', 0),
+(5, 1, 21156, 'Battle Stance Passive', 0),
+(6, 1, 21156, 'Battle Stance Passive', 0),
+(7, 1, 21156, 'Battle Stance Passive', 0),
+(8, 1, 21156, 'Battle Stance Passive', 0),
+(4, 11, 21178, 'Bear Form (Passive2)', 0),
+(6, 11, 21178, 'Bear Form (Passive2)', 0);
 UNLOCK TABLES;
 /*!40000 ALTER TABLE `playercreateinfo_spell` ENABLE KEYS */;
 
@@ -7507,7 +7506,7 @@ CREATE TABLE `spell_chain` (
 
 /*!40000 ALTER TABLE `spell_chain` DISABLE KEYS */;
 LOCK TABLES `spell_chain` WRITE;
-INSERT INTO `spell_chain` VALUES
+INSERT INTO `spell_chain` (`spell_id`, `prev_spell`, `first_spell`, `rank`) VALUES 
 (8613, 0, 8613, 1),
 (8617, 8613, 8613, 2),
 (8618, 8617, 8613, 3),
@@ -8850,8 +8849,8 @@ CREATE TABLE `spell_learn_skill` (
   `SkillID` smallint(6) NOT NULL default '0',
   `Value` int(11) default '0',
   `MaxValue` int(11) default '0',
-  PRIMARY KEY (`entry`),
-  UNIQUE KEY spell_skill(`entry`,`SkillID`)
+  PRIMARY KEY  (`entry`),
+  UNIQUE KEY `spell_skill` (`entry`,`SkillID`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Item System';
 
 --
@@ -8861,47 +8860,47 @@ CREATE TABLE `spell_learn_skill` (
 
 /*!40000 ALTER TABLE `spell_learn_skill` DISABLE KEYS */;
 LOCK TABLES `spell_learn_skill` WRITE;
-INSERT INTO `spell_learn_skill` VALUES
-( 9078, 415,  1,  1),
-( 9077, 414,  1,  1),
-( 8737, 413,  1,  1),
-(  750, 293,  1,  1),
-( 9116, 433,  1,  1),
-(  196, 44,  1,  0),
-(  197, 172,  1,  0),
-(  227, 136,  1,  0),
-(  198, 54,  1,  0),
-(  199, 160,  1,  0),
-(  201, 43,  1,  0),
-(  202, 55,  1,  0),
-( 1180, 173,  1,  0),
-(15590, 473,  1,  0),
-(  200, 229,  1,  0),
-( 3386, 229,  1,  0),
-(  264, 45,  1,  0),
-( 5011, 226,  1,  0),
-(  266, 46,  1,  0),
-( 2567, 176,  1,  0),
-( 5009, 228,  1,  0),
-( 2842, 40,  1,  0),
+INSERT INTO `spell_learn_skill` (`entry`, `SkillID`, `Value`, `MaxValue`) VALUES 
+(9078, 415, 1, 1),
+(9077, 414, 1, 1),
+(8737, 413, 1, 1),
+(750, 293, 1, 1),
+(9116, 433, 1, 1),
+(196, 44, 1, 0),
+(197, 172, 1, 0),
+(227, 136, 1, 0),
+(198, 54, 1, 0),
+(199, 160, 1, 0),
+(201, 43, 1, 0),
+(202, 55, 1, 0),
+(1180, 173, 1, 0),
+(15590, 473, 1, 0),
+(200, 229, 1, 0),
+(3386, 229, 1, 0),
+(264, 45, 1, 0),
+(5011, 226, 1, 0),
+(266, 46, 1, 0),
+(2567, 176, 1, 0),
+(5009, 228, 1, 0),
+(2842, 40, 1, 0),
 (33388, 762, 75, 75),
 (33391, 762, 150, 150),
-( 1804, 633,  1,  0),
-(  668, 98, -1, -1),
-(  669, 109, -1, -1),
-(  670, 115, -1, -1),
-(  671, 113, -1, -1),
-(  672, 111, -1, -1),
-(  813, 137, -1, -1),
-(  814, 138, -1, -1),
-(  815, 139, -1, -1),
-(  816, 140, -1, -1),
-(  817, 141, -1, -1),
-( 7340, 313, -1, -1),
-( 7341, 315, -1, -1),
+(1804, 633, 1, 0),
+(668, 98, -1, -1),
+(669, 109, -1, -1),
+(670, 115, -1, -1),
+(671, 113, -1, -1),
+(672, 111, -1, -1),
+(813, 137, -1, -1),
+(814, 138, -1, -1),
+(815, 139, -1, -1),
+(816, 140, -1, -1),
+(817, 141, -1, -1),
+(7340, 313, -1, -1),
+(7341, 315, -1, -1),
 (17737, 673, -1, -1),
-(  204, 95,  1,  0),
-(  203, 162,  1,  0);
+(204, 95, 1, 0),
+(203, 162, 1, 0);
 UNLOCK TABLES;
 /*!40000 ALTER TABLE `spell_learn_skill` ENABLE KEYS */;
 
@@ -8914,7 +8913,7 @@ CREATE TABLE `spell_learn_spell` (
   `entry` smallint(6) unsigned NOT NULL default '0',
   `SpellID` smallint(6) unsigned NOT NULL default '0',
   `IfNoSpell` smallint(6) unsigned NOT NULL default '0',
-  PRIMARY KEY (`entry`,`SpellID`)
+  PRIMARY KEY  (`entry`,`SpellID`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Item System';
 
 --
@@ -8923,7 +8922,7 @@ CREATE TABLE `spell_learn_spell` (
 
 /*!40000 ALTER TABLE `spell_learn_spell` DISABLE KEYS */;
 LOCK TABLES `spell_learn_spell` WRITE;
-INSERT INTO `spell_learn_spell` VALUES
+INSERT INTO `spell_learn_spell` (`entry`, `SpellID`, `IfNoSpell`) VALUES 
 (4036, 3918, 0),
 (4036, 3919, 0),
 (4036, 3920, 0),
@@ -8986,7 +8985,7 @@ CREATE TABLE `spell_proc_event` (
 
 /*!40000 ALTER TABLE `spell_proc_event` DISABLE KEYS */;
 LOCK TABLES `spell_proc_event` WRITE;
-INSERT INTO `spell_proc_event` VALUES
+INSERT INTO `spell_proc_event` (`entry`, `SchoolMask`, `Category`, `SkillID`, `SpellFamilyMask`, `procFlags`, `ppmRate`) VALUES 
 (6866, 4, 0, 0, 0, 20564, 0),
 (6870, 0, 0, 0, 0, 0, 0),
 (7131, 0, 0, 0, 0, 664232, 0),
@@ -9855,7 +9854,7 @@ CREATE TABLE `spell_threat` (
 
 /*!40000 ALTER TABLE `spell_threat` DISABLE KEYS */;
 LOCK TABLES `spell_threat` WRITE;
-INSERT INTO `spell_threat` VALUES
+INSERT INTO `spell_threat` (`entry`, `Threat`) VALUES 
 (1672, 180),
 (9881, 207),
 (11556, 43),
