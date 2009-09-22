@@ -1,14 +1,14 @@
 #define _CRT_SECURE_NO_DEPRECATE
 
 #include <stdio.h>
-#include <vector>
+#include <deque>
+#include <set>
+
 #include "dbcfile.h"
-#include "adt.h"
 #include "mpq_libmpq.h"
-//#include <io.h>
-#include <fcntl.h>
 
 extern unsigned int iRes;
+extern std::deque<MPQArchive*> gOpenArchives;
 bool ConvertADT(char*,char*);
 
 typedef struct{
@@ -25,8 +25,19 @@ char output_path[128]=".";
 char input_path[128]=".";
 uint32 map_count;
 
-typedef bool extr_map[64][64];
-//extr_map * maps_extr;
+static char* const langs[]={"deDE", "enUS", "enGB", "frFR", "esES", "zhCN", "zhTW" };
+#define LANG_COUNT 7
+
+bool FileExists( const char* FileName )
+{
+    if( FILE* fp = fopen( FileName, "rb" ) )
+    {
+        fclose( fp );
+        return true;
+    }
+
+    return false;
+}
 
 void Usage(char* prg)
 {
@@ -35,15 +46,45 @@ void Usage(char* prg)
     exit(1);
 }
 
+void HandleArgs(int argc, char * arg[])
+{
+    for(int c=1;c<argc;c++)
+    {
+        //i - input path
+        //o - output path
+        //r - resolution, array of (r * r) heights will be created 
+        if(arg[c][0] != '-')
+            Usage(arg[0]);
+
+        switch(arg[c][1])
+        {
+            case 'i':
+                if(c+1<argc)//all ok
+                    strcpy(input_path,arg[(c++) +1]);
+                else
+                    Usage(arg[0]);
+                break;
+            case 'o':
+                if(c+1<argc)//all ok
+                    strcpy(output_path,arg[(c++) +1]);
+                else
+                    Usage(arg[0]);
+                break;
+            case 'r':
+                if(c+1<argc)//all ok
+                    iRes=atoi(arg[(c++) +1]);
+                else
+                    Usage(arg[0]);
+                break;
+        }
+    }
+}
+
 void ExtractMapsFromMpq()
 {
     char mpq_filename[1024];
     char output_filename[1024];
-    //  char tmp[256];
-    //  sprintf(tmp,"%s/Data/%s",input_path,filename);
 
-    //MPQArchive* p=new MPQArchive(tmp);
-    //map_count=1;
     unsigned int total=map_count*64*64;
     unsigned int done=0;
 
@@ -54,9 +95,7 @@ void ExtractMapsFromMpq()
             for(unsigned int y=0;y<64;y++)
             {
                 sprintf(mpq_filename,"World\\Maps\\%s\\%s_%u_%u.adt",map_ids[z].name,map_ids[z].name,x,y);
-                //maps_extr[z][x][y]=true;
                 sprintf(output_filename,"%s/maps/%03u%02u%02u.map",output_path,map_ids[z].id,y,x);
-                //maps_extr[z][x][y]=
                 ConvertADT(mpq_filename,output_filename);
                 done++;
             }
@@ -68,121 +107,118 @@ void ExtractMapsFromMpq()
 
 //bool WMO(char* filename);
 
-int main(int argc, char * arg[])
+void ReadMapDBC()
 {
-    char tmp[512];
+    DBCFile dbc("DBFilesClient\\Map.dbc");
+    dbc.open();
 
-    for(int c=1;c<argc;c++)
-    {
-        //i - input path
-        //o - output path
-        //r - resolution, array of (r * r) heights will be created 
-        if(arg[c][0]!='-')
-
-        Usage(arg[0]);
-
-        switch(arg[c][1])
-        {
-        case 'i':
-            if(c+1<argc)//all ok
-                strcpy(input_path,arg[(c++) +1]);
-            else Usage(arg[0]);
-            break;
-        case 'o':
-            if(c+1<argc)//all ok
-                strcpy(output_path,arg[(c++) +1]);
-            else Usage(arg[0]);
-            break;
-        case 'r':
-            if(c+1<argc)//all ok
-                iRes=atoi(arg[(c++) +1]);
-            else Usage(arg[0]);
-            break;
-        }
-    }
-
-    std::vector<MPQArchive*> archives;
-	const char* archiveNames[] = {"patch-2.MPQ", "patch.MPQ", "terrain.MPQ","dbc.MPQ"};
-
-
-    for (size_t i=0; i<4; i++)
-
-    {
-        sprintf(tmp,"%s/Data/%s",input_path,archiveNames[i]);
-        archives.push_back(new MPQArchive(tmp));
-    }
-
-    //map.dbc
-    DBCFile * dbc= new DBCFile("DBFilesClient\\Map.dbc");
-    if(dbc)
-        dbc->open();
-    else
-        return (1);
-
-    map_count=dbc->getRecordCount();
+    map_count=dbc.getRecordCount();
     map_ids=new map_id[map_count];
-    //maps_extr = new extr_map [map_count];
-    //memset(maps_extr,false, sizeof(extr_map) *map_count);
     for(unsigned int x=0;x<map_count;x++)
     {
-        map_ids[x].id=dbc->getRecord (x).getUInt(0);
-        strcpy(map_ids[x].name,dbc->getRecord(x).getString(1));
+        map_ids[x].id=dbc.getRecord(x).getUInt(0);
+        strcpy(map_ids[x].name,dbc.getRecord(x).getString(1));
     }
-    delete dbc;
-    //map.dbc
+}
 
-    //areatable.dbc
-    dbc = new DBCFile("DBFilesClient\\AreaTable.dbc");
-    dbc->open();
+void ReadAreaTableDBC()
+{
+    DBCFile dbc("DBFilesClient\\AreaTable.dbc");
+    dbc.open();
 
-    unsigned int area_count=dbc->getRecordCount ();
+    unsigned int area_count=dbc.getRecordCount();
     uint32 maxi=0;
     for(unsigned int x=0;x<area_count;x++)
     {
-        if(maxi<dbc->getRecord(x).getUInt(0))
-            maxi=dbc->getRecord(x).getUInt(0);
+        if(maxi<dbc.getRecord(x).getUInt(0))
+            maxi=dbc.getRecord(x).getUInt(0);
             //printf("\n%d %d",dbc->getRecord(x).getUInt(0),dbc->getRecord(x).getUInt(3));
     }
     maxi++;//not needed actually
     areas=new uint16[maxi];
     memset(areas,0xff,maxi*2);
     for(unsigned int x=0;x<area_count;x++)
-        areas[dbc->getRecord(x).getUInt(0)]  =dbc->getRecord(x).getUInt(3);
+        areas[dbc.getRecord(x).getUInt(0)] = dbc.getRecord(x).getUInt(3);
+}
 
-    delete dbc;
+void ExtractDBCFiles()
+{
+    printf("Extracting dbc files...\n");
+    
+    set<string> dbcfiles;
 
-    //areatable.dbc
+    // get DBC file list
+    for(deque<MPQArchive*>::iterator i = gOpenArchives.begin(); i != gOpenArchives.end();++i)
+    {
+        vector<string> files = (*i)->GetFileList();
+        for (vector<string>::iterator iter = files.begin(); iter != files.end(); ++iter) 
+            if (iter->rfind(".dbc") == iter->length() - strlen(".dbc"))
+                    dbcfiles.insert(*iter);
+    }
+
+    // extract DBCs
+    int count = 0;
+    for (set<string>::iterator iter = dbcfiles.begin(); iter != dbcfiles.end(); ++iter) 
+    {
+        string filename = output_path;
+        filename += "/dbc/";
+        filename += (iter->c_str() + strlen("DBFilesClient\\"));
+
+        //cout << filename << endl;
+
+        FILE *output=fopen(filename.c_str(),"wb");
+        if(!output)
+        {
+            printf("Can't create the output file '%s'\n",filename.c_str());
+            continue;
+        }
+        MPQFile m(iter->c_str());
+        if(!m.isEof())
+            fwrite(m.getPointer(),1,m.getSize(),output);
+
+        fclose(output);
+        ++count;
+    }
+    printf("Extracted %u DBC files\n", count);
+}
+
+void LoadMPQFiles()
+{
+    char filename[512];
+
+    sprintf(filename,"%s/Data/dbc.MPQ",input_path);
+    new MPQArchive(filename);
+    sprintf(filename,"%s/Data/terrain.MPQ",input_path);
+    new MPQArchive(filename);
+
+    for(int i = 1; i < 5; ++i)
+    {
+        char ext[2] = "";
+        if(i > 1)
+            sprintf(ext, "-%i", i);
+
+        sprintf(filename,"%s/Data/patch%s.MPQ",input_path,ext);
+        if(!FileExists(filename))
+            break;
+        new MPQArchive(filename);
+    }
+}
+
+int main(int argc, char * arg[])
+{
+    HandleArgs(argc, arg);
+
+    LoadMPQFiles();
+
+    ReadMapDBC();
+    ReadAreaTableDBC();
 
     ExtractMapsFromMpq();
 
     delete [] areas;
     delete [] map_ids;
 
-/*  // This would be nice someday (don't have time to get it to work right now):
-    cout << "Extracting dbc files..." << endl;
-    for (size_t i=3; i>0; i--)
-    {
-        vector<string> files = archives[i]->GetFileList();
-        for (vector<string>::iterator iter = files.begin(); iter != files.end(); iter++) {
-            if (memcmp((void *)(iter->c_str()), "DBFilesClient\\", strlen("DBFilesClient\\")) == 0) {
-                string tmp = "./dbc/";
-                tmp += (iter->c_str() + strlen("DBFilesClient\\"));
-                //mpq_hash hash = archives[i]->GetHashEntry(iter->c_str());
-                //if ((hash.blockindex != 0xFFFFFFFF) && (hash.blockindex != 0)) {
-                    MPQFile m(iter->c_str());
-                    if(!m.isEof ()) {
-                        int fd = _open(tmp.c_str(), O_RDWR|O_CREAT|O_TRUNC, 0644);
-                        _write(fd, m.getBuffer(), m.getSize());
-                        _close(fd);
-                    }
-                    //if (libmpq_file_extract(&archives[i]->mpq_a, hash.blockindex, tmp.c_str())) {
-                    //    cout << "Error writing " << tmp.c_str() << endl;
-                    //}
-            }
-                //cout << iter->c_str() << endl;
-        }
-    }
-*/
-    return (0); // Exit The Program
-}
+    ExtractDBCFiles();
 
+    return 0;
+}
