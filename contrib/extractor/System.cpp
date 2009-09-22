@@ -26,11 +26,20 @@ typedef struct{
 typedef unsigned char uint8;
 typedef unsigned short uint16;
 typedef unsigned int uint32;
+
 map_id * map_ids;
 uint16 * areas;
 char output_path[128]=".";
 char input_path[128]=".";
-uint32 map_count;
+
+enum Extract
+{
+    EXTRACT_MAP = 1,
+    EXTRACT_DBC = 2
+};
+int extract = EXTRACT_MAP | EXTRACT_DBC;
+
+#define ADT_RES 64
 
 void CreateDir( const std::string& Path )
 {
@@ -54,7 +63,7 @@ bool FileExists( const char* FileName )
 
 void Usage(char* prg)
 {
-    printf("Usage:\n%s -[var] [value]\n-i set input path\n-o set output path\n-r set resolution\nExample: %s -r 256 -i \"c:\\games\\game\"",
+    printf("Usage:\n%s -[var] [value]\n-i set input path\n-o set output path\n-r set resolution\n-e extract only MAP(1)/DBC(2) - standard: both(3)\nExample: %s -r 256 -i \"c:\\games\\game\"",
     prg,prg);
     exit(1);
 }
@@ -65,7 +74,8 @@ void HandleArgs(int argc, char * arg[])
     {
         //i - input path
         //o - output path
-        //r - resolution, array of (r * r) heights will be created 
+        //r - resolution, array of (r * r) heights will be created
+        //e - extract only MAP(1)/DBC(2) - standard both(3)
         if(arg[c][0] != '-')
             Usage(arg[0]);
 
@@ -89,8 +99,51 @@ void HandleArgs(int argc, char * arg[])
                 else
                     Usage(arg[0]);
                 break;
+            case 'e':
+                if(c+1<argc)//all ok
+                {
+                    extract=atoi(arg[(c++) +1]);
+                    if(!(extract > 0 && extract < 4))
+                        Usage(arg[0]);
+                }
+                else
+                    Usage(arg[0]);
+                break;
         }
     }
+}
+
+uint32 ReadMapDBC()
+{
+    printf("Read Map.dbc file... ");
+    DBCFile dbc("DBFilesClient\\Map.dbc");
+    dbc.open();
+
+    uint32 map_count=dbc.getRecordCount();
+    map_ids=new map_id[map_count];
+    for(unsigned int x=0;x<map_count;x++)
+    {
+        map_ids[x].id=dbc.getRecord(x).getUInt(0);
+        strcpy(map_ids[x].name,dbc.getRecord(x).getString(1));
+    }
+    printf("Done! (%u maps loaded)\n", map_count);
+    return map_count;
+}
+
+void ReadAreaTableDBC()
+{
+    printf("Read AreaTable.dbc file... ");
+    DBCFile dbc("DBFilesClient\\AreaTable.dbc");
+    dbc.open();
+
+    unsigned int area_count=dbc.getRecordCount();
+    uint32 maxid = dbc.getMaxId();
+    areas=new uint16[maxid + 1];
+    memset(areas, 0xff, sizeof(areas));
+    for(unsigned int x=0; x<area_count;++x)
+        areas[dbc.getRecord(x).getUInt(0)] = dbc.getRecord(x).getUInt(3);
+
+    printf("Done! (%u areas loaded)\n", area_count);
 }
 
 void ExtractMapsFromMpq()
@@ -98,18 +151,24 @@ void ExtractMapsFromMpq()
     char mpq_filename[1024];
     char output_filename[1024];
 
-    unsigned int total=map_count*64*64;
+    printf("Extracting maps...\n");
+
+    uint32 map_count = ReadMapDBC();
+
+    ReadAreaTableDBC();
+
+    unsigned int total=map_count*ADT_RES*ADT_RES;
     unsigned int done=0;
-    
+
     std::string path = output_path;
     path += "/maps/";
     CreateDir(path);
 
-    for(unsigned int x=0;x<64;x++)
+    for(int x = 0; x < ADT_RES; ++x)
     {
-        for(unsigned int z=0;z<map_count;z++)
+        for(int y = 0; y < ADT_RES; ++y)
         {
-            for(unsigned int y=0;y<64;y++)
+            for(int z = 0; z < map_count; ++z)
             {
                 sprintf(mpq_filename,"World\\Maps\\%s\\%s_%u_%u.adt",map_ids[z].name,map_ids[z].name,x,y);
                 sprintf(output_filename,"%s/maps/%03u%02u%02u.map",output_path,map_ids[z].id,y,x);
@@ -120,55 +179,24 @@ void ExtractMapsFromMpq()
             printf("Processing........................%d%%\r",(100*done)/total);
         }
     }
+
+    delete [] areas;
+    delete [] map_ids;
 }
 
 //bool WMO(char* filename);
 
-void ReadMapDBC()
-{
-    DBCFile dbc("DBFilesClient\\Map.dbc");
-    dbc.open();
-
-    map_count=dbc.getRecordCount();
-    map_ids=new map_id[map_count];
-    for(unsigned int x=0;x<map_count;x++)
-    {
-        map_ids[x].id=dbc.getRecord(x).getUInt(0);
-        strcpy(map_ids[x].name,dbc.getRecord(x).getString(1));
-    }
-}
-
-void ReadAreaTableDBC()
-{
-    DBCFile dbc("DBFilesClient\\AreaTable.dbc");
-    dbc.open();
-
-    unsigned int area_count=dbc.getRecordCount();
-    uint32 maxi=0;
-    for(unsigned int x=0;x<area_count;x++)
-    {
-        if(maxi<dbc.getRecord(x).getUInt(0))
-            maxi=dbc.getRecord(x).getUInt(0);
-            //printf("\n%d %d",dbc->getRecord(x).getUInt(0),dbc->getRecord(x).getUInt(3));
-    }
-    maxi++;//not needed actually
-    areas=new uint16[maxi];
-    memset(areas,0xff,maxi*2);
-    for(unsigned int x=0;x<area_count;x++)
-        areas[dbc.getRecord(x).getUInt(0)] = dbc.getRecord(x).getUInt(3);
-}
-
 void ExtractDBCFiles()
 {
     printf("Extracting dbc files...\n");
-    
+
     set<string> dbcfiles;
 
     // get DBC file list
     for(ArchiveSet::iterator i = gOpenArchives.begin(); i != gOpenArchives.end();++i)
     {
         vector<string> files = (*i)->GetFileList();
-        for (vector<string>::iterator iter = files.begin(); iter != files.end(); ++iter) 
+        for (vector<string>::iterator iter = files.begin(); iter != files.end(); ++iter)
             if (iter->rfind(".dbc") == iter->length() - strlen(".dbc"))
                     dbcfiles.insert(*iter);
     }
@@ -176,10 +204,10 @@ void ExtractDBCFiles()
     std::string path = output_path;
     path += "/dbc/";
     CreateDir(path);
-    
+
     // extract DBCs
     int count = 0;
-    for (set<string>::iterator iter = dbcfiles.begin(); iter != dbcfiles.end(); ++iter) 
+    for (set<string>::iterator iter = dbcfiles.begin(); iter != dbcfiles.end(); ++iter)
     {
         string filename = output_path;
         filename += "/dbc/";
@@ -209,12 +237,17 @@ void LoadMPQFiles()
 
     sprintf(filename,"%s/Data/dbc.MPQ",input_path);
     new MPQArchive(filename);
-    sprintf(filename,"%s/Data/terrain.MPQ",input_path);
-    new MPQArchive(filename);
+
+    //need those files only if extract maps
+    if(extract & EXTRACT_MAP)
+    {
+        sprintf(filename,"%s/Data/terrain.MPQ",input_path);
+        new MPQArchive(filename);
+    }
 
     for(int i = 1; i < 5; ++i)
     {
-        char ext[2] = "";
+        char ext[3] = "";
         if(i > 1)
             sprintf(ext, "-%i", i);
 
@@ -227,20 +260,18 @@ void LoadMPQFiles()
 
 int main(int argc, char * arg[])
 {
+    printf("Map & DBC Extractor\n");
+    printf("===================\n");
+
     HandleArgs(argc, arg);
 
     LoadMPQFiles();
 
-    ReadMapDBC();
-    ReadAreaTableDBC();
+    if(extract & EXTRACT_MAP)
+        ExtractMapsFromMpq();
 
-    ExtractMapsFromMpq();
-
-    delete [] areas;
-    delete [] map_ids;
-
-    ExtractDBCFiles();
+    if(extract & EXTRACT_DBC)
+        ExtractDBCFiles();
 
     return 0;
 }
-
