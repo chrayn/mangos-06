@@ -4777,15 +4777,15 @@ void Player::_ApplyItemBonuses(ItemPrototype const *proto,uint8 slot,bool apply)
 
         switch (proto->ItemStat[i].ItemStatType)
         {
-            case ITEM_STAT_POWER:                           // modify MP
+            case ITEM_MOD_MANA:                             // modify MP
                 ApplyMaxPowerMod(POWER_MANA, val, apply);
                 //typestr = "Mana";
                 break;
-            case ITEM_STAT_HEALTH:                          // modify HP
+            case ITEM_MOD_HEALTH:                           // modify HP
                 ApplyMaxHealthMod(val, apply);
                 //typestr = "Health";
                 break;
-            case ITEM_STAT_AGILITY:                         // modify agility
+            case ITEM_MOD_AGILITY:                          // modify agility
                 ApplyStatMod(STAT_AGILITY,                val, apply);
                 if(val > 0)
                     ApplyPosStatMod(STAT_AGILITY,         val, apply);
@@ -4793,7 +4793,7 @@ void Player::_ApplyItemBonuses(ItemPrototype const *proto,uint8 slot,bool apply)
                     ApplyNegStatMod(STAT_AGILITY,        -val, apply);
                 //typestr = "AGILITY";
                 break;
-            case ITEM_STAT_STRENGTH:                        //modify strength
+            case ITEM_MOD_STRENGTH:                         //modify strength
                 ApplyStatMod(STAT_STRENGTH,               val, apply);
                 if(val > 0)
                     ApplyPosStatMod(STAT_STRENGTH,        val, apply);
@@ -4801,7 +4801,7 @@ void Player::_ApplyItemBonuses(ItemPrototype const *proto,uint8 slot,bool apply)
                     ApplyNegStatMod(STAT_STRENGTH,       -val, apply);
                 //typestr = "STRENGHT";
                 break;
-            case ITEM_STAT_INTELLECT:                       //modify intellect
+            case ITEM_MOD_INTELLECT:                        //modify intellect
                 ApplyStatMod(STAT_INTELLECT,              val, apply);
                 if(val > 0)
                     ApplyPosStatMod(STAT_INTELLECT,       val, apply);
@@ -4810,7 +4810,7 @@ void Player::_ApplyItemBonuses(ItemPrototype const *proto,uint8 slot,bool apply)
                 //ApplyMaxPowerMod(POWER_MANA,              val*15, apply);
                 //typestr = "INTELLECT";
                 break;
-            case ITEM_STAT_SPIRIT:                          //modify spirit
+            case ITEM_MOD_SPIRIT:                           //modify spirit
                 ApplyStatMod(STAT_SPIRIT,                 val, apply);
                 if(val > 0)
                     ApplyPosStatMod(STAT_SPIRIT,          val, apply);
@@ -4818,7 +4818,7 @@ void Player::_ApplyItemBonuses(ItemPrototype const *proto,uint8 slot,bool apply)
                     ApplyNegStatMod(STAT_SPIRIT,         -val, apply);
                 //typestr = "SPIRIT";
                 break;
-            case ITEM_STAT_STAMINA:                         //modify stamina
+            case ITEM_MOD_STAMINA:                          //modify stamina
                 ApplyStatMod(STAT_STAMINA,                val, apply);
                 if(val > 0)
                     ApplyPosStatMod(STAT_STAMINA,         val, apply);

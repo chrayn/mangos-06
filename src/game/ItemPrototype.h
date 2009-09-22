@@ -74,14 +74,13 @@
 
 enum ITEM_STAT_TYPE
 {
-    ITEM_STAT_POWER      = 0,
-    ITEM_STAT_HEALTH     = 1,
-    ITEM_STAT_UNKNOWN    = 2,
-    ITEM_STAT_AGILITY    = 3,
-    ITEM_STAT_STRENGTH   = 4,
-    ITEM_STAT_INTELLECT  = 5,
-    ITEM_STAT_SPIRIT     = 6,
-    ITEM_STAT_STAMINA    = 7
+    ITEM_MOD_MANA                     = 0,
+    ITEM_MOD_HEALTH                   = 1,
+    ITEM_MOD_AGILITY                  = 3,
+    ITEM_MOD_STRENGTH                 = 4,
+    ITEM_MOD_INTELLECT                = 5,
+    ITEM_MOD_SPIRIT                   = 6,
+    ITEM_MOD_STAMINA                  = 7,
 };
 
 enum ITEM_DAMAGE_TYPE

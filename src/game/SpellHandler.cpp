@@ -383,7 +383,7 @@ void WorldSession::HandleGameObjectUseOpcode( WorldPacket & recv_data )
             spellTarget = targetPlayer;
 
             // prepare data for final summoning (before current spell finish to prevent access to deleted GO)
-            info = obj->GetGOInfo();
+            //info = obj->GetGOInfo();
             spellId = info->sound1;
 
             // finish spell
@@ -433,7 +433,7 @@ void WorldSession::HandleGameObjectUseOpcode( WorldPacket & recv_data )
             }
             break;
         default:
-            sLog.outDebug( "Unknown Object Type %u\n", obj->GetUInt32Value(GAMEOBJECT_TYPE_ID));
+            sLog.outDebug("Unknown Object Type %u\n", obj->GetUInt32Value(GAMEOBJECT_TYPE_ID));
             break;
     }
 
