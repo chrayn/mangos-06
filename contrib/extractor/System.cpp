@@ -25,9 +25,6 @@ char output_path[128]=".";
 char input_path[128]=".";
 uint32 map_count;
 
-static char* const langs[]={"deDE", "enUS", "enGB", "frFR", "esES", "zhCN", "zhTW" };
-#define LANG_COUNT 7
-
 bool FileExists( const char* FileName )
 {
     if( FILE* fp = fopen( FileName, "rb" ) )
@@ -222,3 +219,4 @@ int main(int argc, char * arg[])
 
     return 0;
 }
+

@@ -99,11 +99,6 @@ MPQFile::MPQFile(const char* filename):
     buffer = 0;
 }
 
-MPQFile::~MPQFile()
-{
-    close();
-}
-
 size_t MPQFile::read(void* dest, size_t bytes)
 {
     if (eof) return 0;
@@ -119,11 +114,6 @@ size_t MPQFile::read(void* dest, size_t bytes)
     pointer = rpos;
 
     return bytes;
-}
-
-bool MPQFile::isEof()
-{
-    return eof;
 }
 
 void MPQFile::seek(int offset)
@@ -145,22 +135,3 @@ void MPQFile::close()
     eof = true;
 }
 
-size_t MPQFile::getSize()
-{
-    return size;
-}
-
-size_t MPQFile::getPos()
-{
-    return pointer;
-}
-
-char* MPQFile::getBuffer()
-{
-    return buffer;
-}
-
-char* MPQFile::getPointer()
-{
-    return buffer + pointer;
-}
