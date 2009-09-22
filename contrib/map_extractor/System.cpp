@@ -71,6 +71,7 @@ void ExtractMapsFromMpq()
 int main(int argc, char * arg[])
 {
     char tmp[512];
+
     for(int c=1;c<argc;c++)
     {
         //i - input path
@@ -103,7 +104,9 @@ int main(int argc, char * arg[])
     std::vector<MPQArchive*> archives;
 	const char* archiveNames[] = {"patch-2.MPQ", "patch.MPQ", "terrain.MPQ","dbc.MPQ"};
 
+
     for (size_t i=0; i<4; i++)
+
     {
         sprintf(tmp,"%s/Data/%s",input_path,archiveNames[i]);
         archives.push_back(new MPQArchive(tmp));
