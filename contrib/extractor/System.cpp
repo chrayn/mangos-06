@@ -3,7 +3,12 @@
 #include <stdio.h>
 #include <deque>
 #include <set>
+
+#ifdef WIN32
 #include "direct.h"
+#else
+#include <sys/stat.h>
+#endif
 
 #include "dbcfile.h"
 #include "mpq_libmpq.h"
@@ -30,7 +35,7 @@ uint32 map_count;
 void CreateDir( const std::string& Path )
 {
     #ifdef WIN32
-     _mkdir( Path.c_str());
+    _mkdir( Path.c_str());
     #else
     mkdir( Path.c_str(), 0777 );
     #endif
