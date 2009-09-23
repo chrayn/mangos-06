@@ -273,5 +273,11 @@ int main(int argc, char * arg[])
     if(extract & EXTRACT_DBC)
         ExtractDBCFiles();
 
+    //Close MPQs
+    for(ArchiveSet::iterator i = gOpenArchives.begin(); i != gOpenArchives.end();++i)
+        (*i)->close();
+    gOpenArchives.clear();
+
     return 0;
 }
+
