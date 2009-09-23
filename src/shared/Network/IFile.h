@@ -1,5 +1,5 @@
-/** \file ResolvServer.h
- **	\date  2005-03-24
+/** \file IFile.h
+ **	\date  2005-04-25
  **	\author grymse@alhem.net
 **/
 /*
@@ -27,46 +27,40 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
-#ifndef _SOCKETS_ResolvServer_H
-#define _SOCKETS_ResolvServer_H
+#ifndef _SOCKETS_IFile_H
+#define _SOCKETS_IFile_H
+
 #include "sockets-config.h"
-#ifdef ENABLE_RESOLVER
-#include "socket_include.h"
-#include "Thread.h"
+#include <string>
 
 #ifdef SOCKETS_NAMESPACE
 namespace SOCKETS_NAMESPACE {
 #endif
 
-/** \defgroup async Asynchronous DNS */
-/** Async DNS resolver thread. 
-	\ingroup async */
-class ResolvServer : public Thread
+/** \defgroup file File handling */
+/** Pure virtual file I/O interface. 
+	\ingroup file */
+class IFile
 {
 public:
-	ResolvServer(port_t);
-	~ResolvServer();
+	virtual ~IFile() {}
 
-	void Run();
-	void Quit();
+	virtual bool fopen(const std::string&, const std::string&) = 0;
+	virtual void fclose() = 0;
 
-	bool Ready();
+	virtual size_t fread(char *, size_t, size_t) = 0;
+	virtual size_t fwrite(const char *, size_t, size_t) = 0;
 
-private:
-	ResolvServer(const ResolvServer& ) {} // copy constructor
-	ResolvServer& operator=(const ResolvServer& ) { return *this; } // assignment operator
+	virtual char *fgets(char *, int) = 0;
+	virtual void fprintf(const char *format, ...) = 0;
 
-	bool m_quit;
-	port_t m_port;
-	bool m_ready;
+	virtual off_t size() = 0;
+	virtual bool eof() = 0;
 };
-
-
 
 
 #ifdef SOCKETS_NAMESPACE
 }
 #endif
 
-#endif // ENABLE_RESOLVER
-#endif // _SOCKETS_ResolvServer_H
+#endif // _SOCKETS_IFile_H

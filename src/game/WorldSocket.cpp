@@ -66,7 +66,7 @@ struct ServerPktHeader
 #endif
 
 /// WorldSocket construction and initialisation.
-WorldSocket::WorldSocket(SocketHandler &sh): TcpSocket(sh), _cmd(0), _remaining(0), _session(NULL)
+WorldSocket::WorldSocket(ISocketHandler &sh): TcpSocket(sh), _cmd(0), _remaining(0), _session(NULL)
 {
     _seed = 0xDEADBABE;
     m_LastPingMSTime = 0;                                   // first time it will counted as overspeed maybe, but this is not important
@@ -102,6 +102,7 @@ void WorldSocket::OnAccept()
 {
     ///- Add the current socket to the list of sockets to be managed (WorldSocketMgr)
     sWorldSocketMgr.AddSocket(this);
+    Utility::ResolveLocal();
 
     ///- Send a AUTH_CHALLENGE packet
     WorldPacket packet( SMSG_AUTH_CHALLENGE, 4 );
@@ -375,7 +376,7 @@ void WorldSocket::_HandleAuthSession(WorldPacket& recvPacket)
     sWorld.AddSession(_session);
 
     sLog.outDebug( "SOCKET: Client '%s' authenticated successfully.", account.c_str() );
-    sLog.outDebug( "Account: '%s' Login.", account.c_str() );
+    sLog.outDebug( "Account: '%s' Logged in from IP %s.", account.c_str(), GetRemoteAddress().c_str());
 
     ///- Update the last_ip in the database
     //No SQL injection, username escaped.

@@ -1,10 +1,17 @@
-/**
- **	File ......... StdLog.h
- **	Published ....  2004-06-01
- **	Author ....... grymse@alhem.net
- **/
+/** \file StdLog.h
+ **	\date  2004-06-01
+ **	\author grymse@alhem.net
+**/
 /*
-Copyright (C) 2004,2005  Anders Hedstrom
+Copyright (C) 2004-2007  Anders Hedstrom
+
+This library is made available under the terms of the GNU GPL.
+
+If you would like to use this library in a closed-source application,
+a separate license agreement is available. For information about 
+the closed-source license agreement for the C++ sockets library,
+please visit http://www.alhem.net/Sockets/license.html and/or
+email license@alhem.net.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -20,29 +27,46 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
-#ifndef _STDLOG_H
-#define _STDLOG_H
+#ifndef _SOCKETS_StdLog_H
+#define _SOCKETS_StdLog_H
 
+#include "sockets-config.h"
 #include <string>
 
+#ifdef SOCKETS_NAMESPACE
+namespace SOCKETS_NAMESPACE {
+#endif
+
+/** error level enum. */
 typedef enum
 {
-    LOG_LEVEL_WARNING = 0,
-    LOG_LEVEL_ERROR,
-    LOG_LEVEL_FATAL,
-    LOG_LEVEL_INFO
+	LOG_LEVEL_WARNING = 0,
+	LOG_LEVEL_ERROR,
+	LOG_LEVEL_FATAL,
+	LOG_LEVEL_INFO
 } loglevel_t;
 
-class SocketHandler;
+
+class ISocketHandler;
 class Socket;
 
+/** \defgroup logging Log help classes */
+/** Log class interface. 
+	\ingroup logging */
 class StdLog
 {
-    public:
-        virtual void error(SocketHandler *,Socket *,
-            const std::string& user_text,
-            int err,
-            const std::string& sys_err,
-            loglevel_t = LOG_LEVEL_WARNING) = 0;
+public:
+	virtual ~StdLog() {}
+	virtual void error(ISocketHandler *,Socket *,
+		const std::string& user_text,
+		int err,
+		const std::string& sys_err,
+		loglevel_t = LOG_LEVEL_WARNING) = 0;
 };
-#endif                                            // _STDLOG_H
+
+
+#ifdef SOCKETS_NAMESPACE
+}
+#endif
+
+#endif // _SOCKETS_StdLog_H

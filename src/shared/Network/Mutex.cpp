@@ -1,5 +1,5 @@
-/** \file ResolvServer.h
- **	\date  2005-03-24
+/** \file Mutex.cpp
+ **	\date  2004-10-30
  **	\author grymse@alhem.net
 **/
 /*
@@ -27,46 +27,54 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
-#ifndef _SOCKETS_ResolvServer_H
-#define _SOCKETS_ResolvServer_H
-#include "sockets-config.h"
-#ifdef ENABLE_RESOLVER
-#include "socket_include.h"
-#include "Thread.h"
+#include "Mutex.h"
 
 #ifdef SOCKETS_NAMESPACE
 namespace SOCKETS_NAMESPACE {
 #endif
 
-/** \defgroup async Asynchronous DNS */
-/** Async DNS resolver thread. 
-	\ingroup async */
-class ResolvServer : public Thread
+
+Mutex::Mutex()
 {
-public:
-	ResolvServer(port_t);
-	~ResolvServer();
-
-	void Run();
-	void Quit();
-
-	bool Ready();
-
-private:
-	ResolvServer(const ResolvServer& ) {} // copy constructor
-	ResolvServer& operator=(const ResolvServer& ) { return *this; } // assignment operator
-
-	bool m_quit;
-	port_t m_port;
-	bool m_ready;
-};
+#ifdef _WIN32
+	m_mutex = ::CreateMutex(NULL, FALSE, NULL);
+#else
+	pthread_mutex_init(&m_mutex, NULL);
+#endif
+}
 
 
+Mutex::~Mutex()
+{
+#ifdef _WIN32
+	::CloseHandle(m_mutex);
+#else
+	pthread_mutex_destroy(&m_mutex);
+#endif
+}
+
+
+void Mutex::Lock()
+{
+#ifdef _WIN32
+	DWORD d = WaitForSingleObject(m_mutex, INFINITE);
+	/// \todo check 'd' for result
+#else
+	pthread_mutex_lock(&m_mutex);
+#endif
+}
+
+
+void Mutex::Unlock()
+{
+#ifdef _WIN32
+	::ReleaseMutex(m_mutex);
+#else
+	pthread_mutex_unlock(&m_mutex);
+#endif
+}
 
 
 #ifdef SOCKETS_NAMESPACE
 }
 #endif
-
-#endif // ENABLE_RESOLVER
-#endif // _SOCKETS_ResolvServer_H

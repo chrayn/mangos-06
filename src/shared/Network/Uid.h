@@ -1,5 +1,5 @@
-/** \file ResolvServer.h
- **	\date  2005-03-24
+/** \file Uid.h
+ **	\date  2004-04-06
  **	\author grymse@alhem.net
 **/
 /*
@@ -27,38 +27,36 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
-#ifndef _SOCKETS_ResolvServer_H
-#define _SOCKETS_ResolvServer_H
+#ifndef _SOCKETS_Uid_H
+#define _SOCKETS_Uid_H
+
 #include "sockets-config.h"
-#ifdef ENABLE_RESOLVER
-#include "socket_include.h"
-#include "Thread.h"
+// donerat till Tekton 2003-11-12 / AH
+
+#include <string>
 
 #ifdef SOCKETS_NAMESPACE
 namespace SOCKETS_NAMESPACE {
 #endif
 
-/** \defgroup async Asynchronous DNS */
-/** Async DNS resolver thread. 
-	\ingroup async */
-class ResolvServer : public Thread
+/** Generate 128-bit globally unique identifier. 
+	\ingroup util */
+class Uid
 {
 public:
-	ResolvServer(port_t);
-	~ResolvServer();
+	Uid();
+	Uid(const std::string& );
+	Uid(const unsigned char *);
+	~Uid();
 
-	void Run();
-	void Quit();
-
-	bool Ready();
+	std::string GetUid();
+	const unsigned char *GetBuf();
 
 private:
-	ResolvServer(const ResolvServer& ) {} // copy constructor
-	ResolvServer& operator=(const ResolvServer& ) { return *this; } // assignment operator
-
-	bool m_quit;
-	port_t m_port;
-	bool m_ready;
+	Uid(const Uid& ) {}
+	Uid& operator=(const Uid& ) { return *this; }
+	unsigned char m_bufuid[16];
+//	std::string m_uid;
 };
 
 
@@ -68,5 +66,4 @@ private:
 }
 #endif
 
-#endif // ENABLE_RESOLVER
-#endif // _SOCKETS_ResolvServer_H
+#endif // _SOCKETS_Uid_H

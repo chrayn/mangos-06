@@ -34,14 +34,14 @@
 
 #define RA_BUFF_SIZE 1024
 
-class SocketHandler;
+class ISocketHandler;
 
 /// Remote Administration socket
 class RASocket: public TcpSocket
 {
     public:
 
-        RASocket(SocketHandler& h);
+        RASocket(ISocketHandler& h);
         ~RASocket();
 
         void OnAccept();

@@ -49,7 +49,7 @@ typedef int(* pPrintf)(const char*,...);
 void ParseCommand(pPrintf zprintf, char*command);
 
 /// RASocket constructor
-RASocket::RASocket(SocketHandler &h): TcpSocket(h)
+RASocket::RASocket(ISocketHandler &h): TcpSocket(h)
 {
 
     ///- Increment the session number

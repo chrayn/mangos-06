@@ -1,5 +1,5 @@
-/** \file ResolvServer.h
- **	\date  2005-03-24
+/** \file Mutex.h
+ **	\date  2004-10-30
  **	\author grymse@alhem.net
 **/
 /*
@@ -27,46 +27,41 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
-#ifndef _SOCKETS_ResolvServer_H
-#define _SOCKETS_ResolvServer_H
+#ifndef _SOCKETS_Mutex_H
+#define _SOCKETS_Mutex_H
+
 #include "sockets-config.h"
-#ifdef ENABLE_RESOLVER
-#include "socket_include.h"
-#include "Thread.h"
+#ifndef _WIN32
+#include <pthread.h>
+#else
+#include <windows.h>
+#endif
 
 #ifdef SOCKETS_NAMESPACE
 namespace SOCKETS_NAMESPACE {
 #endif
 
-/** \defgroup async Asynchronous DNS */
-/** Async DNS resolver thread. 
-	\ingroup async */
-class ResolvServer : public Thread
+/** Mutex container class, used by Lock. 
+	\ingroup threading */
+class Mutex
 {
+	friend class Lock;
 public:
-	ResolvServer(port_t);
-	~ResolvServer();
+	Mutex();
+	~Mutex();
 
-	void Run();
-	void Quit();
-
-	bool Ready();
-
+	void Lock();
+	void Unlock();
 private:
-	ResolvServer(const ResolvServer& ) {} // copy constructor
-	ResolvServer& operator=(const ResolvServer& ) { return *this; } // assignment operator
-
-	bool m_quit;
-	port_t m_port;
-	bool m_ready;
+#ifdef _WIN32
+	HANDLE m_mutex;
+#else
+	pthread_mutex_t m_mutex;
+#endif
 };
-
-
 
 
 #ifdef SOCKETS_NAMESPACE
 }
 #endif
-
-#endif // ENABLE_RESOLVER
-#endif // _SOCKETS_ResolvServer_H
+#endif // _SOCKETS_Mutex_H

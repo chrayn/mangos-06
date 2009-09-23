@@ -1,10 +1,17 @@
-/**
- **	File ......... TcpSocket.cpp
- **	Published ....  2004-02-13
- **	Author ....... grymse@alhem.net
- **/
+/** \file TcpSocket.cpp
+ **	\date  2004-02-13
+ **	\author grymse@alhem.net
+**/
 /*
-Copyright (C) 2004,2005  Anders Hedstrom
+Copyright (C) 2004-2007  Anders Hedstrom
+
+This library is made available under the terms of the GNU GPL.
+
+If you would like to use this library in a closed-source application,
+a separate license agreement is available. For information about 
+the closed-source license agreement for the C++ sockets library,
+please visit http://www.alhem.net/Sockets/license.html and/or
+email license@alhem.net.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -20,618 +27,826 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
-
-#include "Platform/Define.h"
-
 #ifdef _WIN32
 #pragma warning(disable:4786)
-#define strcasecmp stricmp
 #include <stdlib.h>
 #else
 #include <errno.h>
 #endif
-#include <stdio.h>
+#include "ISocketHandler.h"
 #include <fcntl.h>
 #include <assert.h>
 #include <stdarg.h>
 #ifdef HAVE_OPENSSL
 #include <openssl/rand.h>
+#include <openssl/err.h>
 #endif
 
-#include "SocketHandler.h"
 #include "TcpSocket.h"
-#include "PoolSocket.h"
+#include "Utility.h"
+#include "Ipv4Address.h"
+#include "Ipv6Address.h"
+#include "Mutex.h"
+#include "Uid.h"
+#include "IFile.h"
+
+#ifdef SOCKETS_NAMESPACE
+namespace SOCKETS_NAMESPACE {
+#endif
+
 
 #ifdef _DEBUG
 #define DEB(x) x
 #else
-#define DEB(x)
+#define DEB(x) 
 #endif
 
+
+// statics
 #ifdef HAVE_OPENSSL
-BIO *TcpSocket::bio_err = NULL;
-std::string TcpSocket::m_password;
+SSLInitializer TcpSocket::m_ssl_init;
 #endif
+
 
 // thanks, q
 #ifdef _WIN32
 #pragma warning(disable:4355)
 #endif
-TcpSocket::TcpSocket(SocketHandler& h) : Socket(h)
+TcpSocket::TcpSocket(ISocketHandler& h) : Socket(h)
 ,ibuf(*this, TCP_BUFSIZE_READ)
-//,obuf(*this, 32768)
-,obuf(*this, 131070)
-,m_line("")
-,m_socks4_state(0)
-,m_resolver_id(0)
+,obuf(*this, 32768)
+,m_b_input_buffer_disabled(false)
+,m_bytes_sent(0)
+,m_bytes_received(0)
+,m_skip_c(false)
+#ifdef SOCKETS_DYNAMIC_TEMP
+,m_buf(new char[TCP_BUFSIZE_READ + 1])
+#endif
 #ifdef HAVE_OPENSSL
-,m_context(NULL)
+,m_ssl_ctx(NULL)
 ,m_ssl(NULL)
 ,m_sbio(NULL)
 #endif
+#ifdef ENABLE_SOCKS4
+,m_socks4_state(0)
+#endif
+#ifdef ENABLE_RESOLVER
+,m_resolver_id(0)
+#endif
+#ifdef ENABLE_RECONNECT
+,m_b_reconnect(false)
+,m_b_is_reconnect(false)
+#endif
 {
 }
-
-
 #ifdef _WIN32
 #pragma warning(default:4355)
 #endif
+
 
 #ifdef _WIN32
 #pragma warning(disable:4355)
 #endif
-TcpSocket::TcpSocket(SocketHandler& h,size_t isize,size_t osize) : Socket(h)
+TcpSocket::TcpSocket(ISocketHandler& h,size_t isize,size_t osize) : Socket(h)
 ,ibuf(*this, isize)
 ,obuf(*this, osize)
-,m_line("")
-,m_socks4_state(0)
-,m_resolver_id(0)
+,m_b_input_buffer_disabled(false)
+,m_bytes_sent(0)
+,m_bytes_received(0)
+,m_skip_c(false)
+#ifdef SOCKETS_DYNAMIC_TEMP
+,m_buf(new char[TCP_BUFSIZE_READ + 1])
+#endif
 #ifdef HAVE_OPENSSL
-,m_context(NULL)
+,m_ssl_ctx(NULL)
 ,m_ssl(NULL)
 ,m_sbio(NULL)
 #endif
+#ifdef ENABLE_SOCKS4
+,m_socks4_state(0)
+#endif
+#ifdef ENABLE_RESOLVER
+,m_resolver_id(0)
+#endif
+#ifdef ENABLE_RECONNECT
+,m_b_reconnect(false)
+,m_b_is_reconnect(false)
+#endif
 {
 }
-
-
 #ifdef _WIN32
 #pragma warning(default:4355)
 #endif
 
-#if COMPILER == COMPILER_MICROSOFT
-#define vsnprintf _vsnprintf
-#endif
 
 TcpSocket::~TcpSocket()
 {
+	if (m_mes.size())
+	{
+		Handler().LogError(this, "TcpSocket destructor", 0, "Output buffer not empty", LOG_LEVEL_WARNING);
+	}
+	while (m_mes.size())
+	{
+		ucharp_v::iterator it = m_mes.begin();
+		MES *p = *it;
+		delete p;
+		m_mes.erase(it);
+	}
+#ifdef SOCKETS_DYNAMIC_TEMP
+	delete[] m_buf;
+#endif
 #ifdef HAVE_OPENSSL
-    if (m_ssl)
-    {
-        DEB(        printf("SSL_free()\n");)
-            SSL_free(m_ssl);
-    }
-    if (m_context)
-    {
-        DEB(        printf("SSL_CTX_free()\n");)
-            SSL_CTX_free(m_context);
-    }
+	if (m_ssl)
+	{
+		SSL_free(m_ssl);
+	}
 #endif
 }
 
 
 bool TcpSocket::Open(ipaddr_t ip,port_t port,bool skip_socks)
 {
-    SetConnecting(false);
-    SetSocks4(false);
-// check for pooling
-    PoolSocket *pools = Handler().FindConnection(SOCK_STREAM, "tcp", ip, port);
-    if (pools)
-    {
-        CopyConnection( pools );
-        delete pools;
+	Ipv4Address ad(ip, port);
+	Ipv4Address local;
+	return Open(ad, local, skip_socks);
+}
 
-        SetIsClient();
-        SetCallOnConnect();                       // SocketHandler must call OnConnect
-        DEB(printf("Reusing connection\n");)
-            return true;
-    }
-// if not, create new connection
-    SOCKET s = CreateSocket4(SOCK_STREAM, "tcp");
-    if (s == INVALID_SOCKET)
-    {
-        return false;
-    }
-// socket must be nonblocking for async connect
-    if (!SetNonblocking(true, s))
-    {
-        closesocket(s);
-        return false;
-    }
-    SetIsClient();                                // client because we connect
-    SetClientRemoteAddr(ip);
-    SetClientRemotePort(port);
-    struct sockaddr_in sa;
-// size of sockaddr struct
-    socklen_t sa_len = sizeof(sa);
-    if (!skip_socks && GetSocks4Host() && GetSocks4Port())
-    {
-        memset(&sa, 0, sa_len);
-        sa.sin_family = AF_INET;
-        sa.sin_port = htons(GetSocks4Port());
-        ipaddr_t a = GetSocks4Host();
-        memcpy(&sa.sin_addr, &a, 4);
-        {
-            char slask[100];
-            sprintf(slask,"Connecting to socks4 server @ %08x:%d",GetSocks4Host(),GetSocks4Port());
-            Handler().LogError(this, "Open", 0, slask, LOG_LEVEL_INFO);
-        }
-        SetSocks4();
-    }
-    else
-    {
-// setup sockaddr struct
-        memset(&sa,0,sa_len);
-        sa.sin_family = AF_INET;                  // hp -> h_addrtype;
-        sa.sin_port = htons( port );
-        memcpy(&sa.sin_addr,&ip,4);
-    }
-// try connect
-    int n = connect(s, (struct sockaddr *)&sa, sa_len);
-    if (n == -1)
-    {
-// check error code that means a connect is in progress
-#ifdef _WIN32
-        if (Errno == WSAEWOULDBLOCK)
-#else
-            if (Errno == EINPROGRESS)
+
+#ifdef ENABLE_IPV6
+#ifdef IPPROTO_IPV6
+bool TcpSocket::Open(in6_addr ip,port_t port,bool skip_socks)
+{
+	Ipv6Address ad(ip, port);
+	return Open(ad, skip_socks);
+}
 #endif
-        {
-            SetConnecting( true );            // this flag will control fd_set's
-        }
-        else
-// retry
-        if (Socks4() && Handler().Socks4TryDirect() )
-        {
-            closesocket(s);
-            return Open(ip, port, true);
-        }
-        else
-        {
-            Handler().LogError(this, "connect", Errno, StrError(Errno), LOG_LEVEL_FATAL);
-            closesocket(s);
-            return false;
-        }
-    }
-    else
-    {
-        SetCallOnConnect();                       // SocketHandler must call OnConnect
-    }
-    SetRemoteAddress( (struct sockaddr *)&sa,sa_len);
-    Attach(s);
+#endif
 
-// 'true' means connected or connecting(not yet connected)
-// 'false' means something failed
-    return true;                                  //!Connecting();
+
+bool TcpSocket::Open(SocketAddress& ad,bool skip_socks)
+{
+	Ipv4Address bind_ad("0.0.0.0", 0);
+	return Open(ad, bind_ad, skip_socks);
+}
+
+
+bool TcpSocket::Open(SocketAddress& ad,SocketAddress& bind_ad,bool skip_socks)
+{
+	if (!ad.IsValid())
+	{
+		Handler().LogError(this, "Open", 0, "Invalid SocketAddress", LOG_LEVEL_FATAL);
+		SetCloseAndDelete();
+		return false;
+	}
+	if (Handler().GetCount() >= FD_SETSIZE)
+	{
+		Handler().LogError(this, "Open", 0, "no space left in fd_set", LOG_LEVEL_FATAL);
+		SetCloseAndDelete();
+		return false;
+	}
+	SetConnecting(false);
+#ifdef ENABLE_SOCKS4
+	SetSocks4(false);
+#endif
+	// check for pooling
+#ifdef ENABLE_POOL
+	if (Handler().PoolEnabled())
+	{
+		ISocketHandler::PoolSocket *pools = Handler().FindConnection(SOCK_STREAM, "tcp", ad);
+		if (pools)
+		{
+			CopyConnection( pools );
+			delete pools;
+
+			SetIsClient();
+			SetCallOnConnect(); // ISocketHandler must call OnConnect
+			Handler().LogError(this, "SetCallOnConnect", 0, "Found pooled connection", LOG_LEVEL_INFO);
+			return true;
+		}
+	}
+#endif
+	// if not, create new connection
+	SOCKET s = CreateSocket(ad.GetFamily(), SOCK_STREAM, "tcp");
+	if (s == INVALID_SOCKET)
+	{
+		return false;
+	}
+	// socket must be nonblocking for async connect
+	if (!SetNonblocking(true, s))
+	{
+		SetCloseAndDelete();
+		closesocket(s);
+		return false;
+	}
+#ifdef ENABLE_POOL
+	SetIsClient(); // client because we connect
+#endif
+	SetClientRemoteAddress(ad);
+	int n = 0;
+	if (bind_ad.GetPort() != 0)
+	{
+		bind(s, bind_ad, bind_ad);
+	}
+#ifdef ENABLE_SOCKS4
+	if (!skip_socks && GetSocks4Host() && GetSocks4Port())
+	{
+		Ipv4Address sa(GetSocks4Host(), GetSocks4Port());
+		{
+			std::string sockshost;
+			Utility::l2ip(GetSocks4Host(), sockshost);
+			Handler().LogError(this, "Open", 0, "Connecting to socks4 server @ " + sockshost + ":" +
+				Utility::l2string(GetSocks4Port()), LOG_LEVEL_INFO);
+		}
+		SetSocks4();
+		n = connect(s, sa, sa);
+		SetRemoteAddress(sa);
+	}
+	else
+#endif
+	{
+		n = connect(s, ad, ad);
+		SetRemoteAddress(ad);
+	}
+	if (n == -1)
+	{
+		// check error code that means a connect is in progress
+#ifdef _WIN32
+		if (Errno == WSAEWOULDBLOCK)
+#else
+		if (Errno == EINPROGRESS)
+#endif
+		{
+			Attach(s);
+			SetConnecting( true ); // this flag will control fd_set's
+		}
+		else
+#ifdef ENABLE_SOCKS4
+		if (Socks4() && Handler().Socks4TryDirect() ) // retry
+		{
+			closesocket(s);
+			return Open(ad, true);
+		}
+		else
+#endif
+#ifdef ENABLE_RECONNECT
+		if (Reconnect())
+		{
+			Handler().LogError(this, "connect: failed, reconnect pending", Errno, StrError(Errno), LOG_LEVEL_INFO);
+			Attach(s);
+			SetConnecting( true ); // this flag will control fd_set's
+		}
+		else
+#endif
+		{
+			Handler().LogError(this, "connect: failed", Errno, StrError(Errno), LOG_LEVEL_FATAL);
+			SetCloseAndDelete();
+			closesocket(s);
+			return false;
+		}
+	}
+	else
+	{
+		Attach(s);
+		SetCallOnConnect(); // ISocketHandler must call OnConnect
+	}
+
+	// 'true' means connected or connecting(not yet connected)
+	// 'false' means something failed
+	return true; //!Connecting();
 }
 
 
 bool TcpSocket::Open(const std::string &host,port_t port)
 {
-    if (!Handler().ResolverEnabled() || isip(host) )
-    {
-        ipaddr_t l;
-        if (!u2ip(host,l))
-        {
-            return false;
-        }
-        return Open(l, port);
-    }
-// resolve using async resolver thread
-    m_resolver_id = Resolve(host, port);
-    return true;
-}
-
-
-void TcpSocket::Resolved(int id,ipaddr_t a,port_t port)
-{
-    if (id == m_resolver_id)
-    {
-        if (a && port)
-        {
-            Open(a, port);
-            if (!Handler().Valid(this))
-            {
-                Handler().Add(this);
-            }
-            return;
-        }
-        else
-        {
-            Handler().LogError(this, "Resolved", 0, "Resolver failed", LOG_LEVEL_FATAL);
-        }
-    }
-    else
-    {
-        Handler().LogError(this, "Resolved", id, "Resolver returned wrong job id", LOG_LEVEL_FATAL);
-    }
-    SetCloseAndDelete();
-}
-
-
-// halfbaked IPV6 code
+#ifdef ENABLE_IPV6
 #ifdef IPPROTO_IPV6
-bool TcpSocket::Open6(const std::string &host,port_t port)
-{
-// check for pooling
-
-// if not, create new connection
-    SOCKET s = CreateSocket6(SOCK_STREAM, "tcp");
-    if (s == INVALID_SOCKET)
-    {
-        return false;
-    }
-    struct in6_addr a;
-    if (u2ip(host,a))
-    {
-        struct sockaddr_in6 sa;
-        socklen_t sa_len = sizeof(sa);
-
-        memset(&sa,0,sizeof(sa));
-        sa.sin6_family = AF_INET6;
-        sa.sin6_port = htons( port );
-        sa.sin6_flowinfo = 0;
-        sa.sin6_scope_id = 0;
-        sa.sin6_addr = a;
-
-        if (!SetNonblocking(true, s))
-        {
-            closesocket(s);
-            return false;
-        }
-        int n = connect(s, (struct sockaddr *)&sa, sa_len);
-        if (n == -1)
-        {
-#ifdef _WIN32
-            if (Errno != WSAEWOULDBLOCK)
-#else
-                if (Errno != EINPROGRESS)
+	if (IsIpv6())
+	{
+#ifdef ENABLE_RESOLVER
+		if (!Handler().ResolvedEnabled() || Utility::isipv4(host) )
+		{
 #endif
-            {
-                Handler().LogError(this, "connect", Errno, StrError(Errno), LOG_LEVEL_FATAL);
-                closesocket(s);
-                return false;
-            }
-            else
-            {
-                SetConnecting(true);
-            }
-        }
-        else
-        {
-            SetCallOnConnect();                   // SocketHandler must call OnConnect
-        }
-        SetRemoteAddress((struct sockaddr *)&sa,sa_len);
-        Attach(s);
-        return true;                              //!Connecting();
-    }
-    return false;                                 // u2ip failed
+			in6_addr a;
+			if (!Utility::u2ip(host, a))
+			{
+				SetCloseAndDelete();
+				return false;
+			}
+			Ipv6Address ad(a, port);
+			Ipv6Address local;
+			return Open(ad, local);
+#ifdef ENABLE_RESOLVER
+		}
+		m_resolver_id = Resolve6(host, port);
+		return true;
+#endif
+	}
+#endif
+#endif
+#ifdef ENABLE_RESOLVER
+	if (!Handler().ResolverEnabled() || Utility::isipv4(host) )
+	{
+#endif
+		ipaddr_t l;
+		if (!Utility::u2ip(host,l))
+		{
+			SetCloseAndDelete();
+			return false;
+		}
+		Ipv4Address ad(l, port);
+		Ipv4Address local;
+		return Open(ad, local);
+#ifdef ENABLE_RESOLVER
+	}
+	// resolve using async resolver thread
+	m_resolver_id = Resolve(host, port);
+	return true;
+#endif
+}
+
+
+#ifdef ENABLE_RESOLVER
+void TcpSocket::OnResolved(int id,ipaddr_t a,port_t port)
+{
+	if (id == m_resolver_id)
+	{
+		if (a && port)
+		{
+			Ipv4Address ad(a, port);
+			Ipv4Address local;
+			if (Open(ad, local))
+			{
+				if (!Handler().Valid(this))
+				{
+					Handler().Add(this);
+				}
+			}
+		}
+		else
+		{
+			Handler().LogError(this, "OnResolved", 0, "Resolver failed", LOG_LEVEL_FATAL);
+			SetCloseAndDelete();
+		}
+	}
+	else
+	{
+		Handler().LogError(this, "OnResolved", id, "Resolver returned wrong job id", LOG_LEVEL_FATAL);
+		SetCloseAndDelete();
+	}
+}
+
+
+#ifdef ENABLE_IPV6
+void TcpSocket::OnResolved(int id,in6_addr& a,port_t port)
+{
+	if (id == m_resolver_id)
+	{
+		Ipv6Address ad(a, port);
+		if (ad.IsValid())
+		{
+			Ipv6Address local;
+			if (Open(ad, local))
+			{
+				if (!Handler().Valid(this))
+				{
+					Handler().Add(this);
+				}
+			}
+		}
+	}
+	else
+	{
+		Handler().LogError(this, "OnResolved", id, "Resolver returned wrong job id", LOG_LEVEL_FATAL);
+		SetCloseAndDelete();
+	}
 }
 #endif
+#endif
+
 
 void TcpSocket::OnRead()
 {
-    if (IsSSL())
-    {
+	int n = 0;
+#ifdef SOCKETS_DYNAMIC_TEMP
+	char *buf = m_buf;
+#else
+	char buf[TCP_BUFSIZE_READ];
+#endif
 #ifdef HAVE_OPENSSL
-        DEB(        printf("TcpSocket(SSL)::OnRead()\n");)
-            if (!Ready())
-            return;
-        char buf[TCP_BUFSIZE_READ];
-        int n = SSL_read(m_ssl, buf, TCP_BUFSIZE_READ);
-        if (n == -1)
-        {
-            n = SSL_get_error(m_ssl, n);
-            switch (n)
-            {
-                case SSL_ERROR_NONE:
-                    break;
-                case SSL_ERROR_ZERO_RETURN:
-                    DEB(                printf("SSL_read() returns zero - closing socket\n");)
-                        SetCloseAndDelete(true);
-                    break;
-                default:
-                    DEB(                printf("SSL read problem, errcode = %d\n",n);)
-                        SetCloseAndDelete(true);  // %!
-            }
-        }
-        else
-        if (!n)
-        {
-            SetCloseAndDelete(true);
-            DEB(            printf("read() returns 0\n");)
-        }
-        else
-        {
-            DEB(            printf("TcpSocket(SSL) OnRead read %d bytes\n",n);)
-                if (!ibuf.Write(buf,n))
-            {
-// overflow
-                DEB(                printf(" *** overflow ibuf Write\n");)
-            }
-        }
-        return;
-#endif                                    // HAVE_OPENSSL
-    }
-//    DEB(printf("TcpSocket::OnRead()\n");)
-        int n = (int)ibuf.Space();
-    char buf[TCP_BUFSIZE_READ];
-//	if (!n)
-//		return; // bad
-    n = TCP_BUFSIZE_READ;                         // %! patch away
-    n = recv(GetSocket(),buf,(n < TCP_BUFSIZE_READ) ? n : TCP_BUFSIZE_READ,MSG_NOSIGNAL);
-    if (n == -1)
-    {
-        Handler().LogError(this, "read", Errno, StrError(Errno), LOG_LEVEL_FATAL);
-        SetCloseAndDelete(true);                  // %!
-        SetLost();
-    }
-    else
-    if (!n)
-    {
-        Handler().LogError(this, "read", 0, "read returns 0", LOG_LEVEL_FATAL);
-        SetCloseAndDelete(true);
-        SetLost();
-    }
-    else
-    {
-        OnRawData(buf,n);
-        if (!ibuf.Write(buf,n))
-        {
-// overflow
-            Handler().LogError(this, "read", 0, "ibuf overflow", LOG_LEVEL_WARNING);
-        }
-    }
+	if (IsSSL())
+	{
+		if (!Ready())
+			return;
+		n = SSL_read(m_ssl, buf, TCP_BUFSIZE_READ);
+		if (n == -1)
+		{
+			n = SSL_get_error(m_ssl, n);
+			switch (n)
+			{
+			case SSL_ERROR_NONE:
+			case SSL_ERROR_WANT_READ:
+			case SSL_ERROR_WANT_WRITE:
+				break;
+			case SSL_ERROR_ZERO_RETURN:
+DEB(				fprintf(stderr, "SSL_read() returns zero - closing socket\n");)
+				SetCloseAndDelete(true);
+				SetFlushBeforeClose(false);
+#ifdef ENABLE_POOL
+				SetLost();
+#endif
+				break;
+			default:
+DEB(				fprintf(stderr, "SSL read problem, errcode = %d\n",n);)
+				SetCloseAndDelete(true);
+				SetFlushBeforeClose(false);
+#ifdef ENABLE_POOL
+				SetLost();
+#endif
+			}
+			return;
+		}
+		else
+		if (!n)
+		{
+			Handler().LogError(this, "SSL_read", 0, "read returns 0", LOG_LEVEL_FATAL);
+			SetCloseAndDelete(true);
+			SetFlushBeforeClose(false);
+#ifdef ENABLE_POOL
+			SetLost();
+#endif
+			SetShutdown(SHUT_WR);
+			return;
+		}
+		else
+		if (n > 0 && n <= TCP_BUFSIZE_READ)
+		{
+			m_bytes_received += n;
+			if (GetTrafficMonitor())
+			{
+				GetTrafficMonitor() -> fwrite(buf, 1, n);
+			}
+			if (!m_b_input_buffer_disabled && !ibuf.Write(buf,n))
+			{
+				Handler().LogError(this, "OnRead(ssl)", 0, "ibuf overflow", LOG_LEVEL_WARNING);
+			}
+		}
+		else
+		{
+			Handler().LogError(this, "OnRead(ssl)", n, "abnormal value from SSL_read", LOG_LEVEL_ERROR);
+		}
+	}
+	else
+#endif // HAVE_OPENSSL
+	{
+		n = recv(GetSocket(), buf, TCP_BUFSIZE_READ, MSG_NOSIGNAL);
+		if (n == -1)
+		{
+			Handler().LogError(this, "read", Errno, StrError(Errno), LOG_LEVEL_FATAL);
+			SetCloseAndDelete(true);
+			SetFlushBeforeClose(false);
+#ifdef ENABLE_POOL
+			SetLost();
+#endif
+			return;
+		}
+		else
+		if (!n)
+		{
+			SetCloseAndDelete(true);
+			SetFlushBeforeClose(false);
+#ifdef ENABLE_POOL
+			SetLost();
+#endif
+			SetShutdown(SHUT_WR);
+			return;
+		}
+		else
+		if (n > 0 && n <= TCP_BUFSIZE_READ)
+		{
+			m_bytes_received += n;
+			if (GetTrafficMonitor())
+			{
+				GetTrafficMonitor() -> fwrite(buf, 1, n);
+			}
+			if (!m_b_input_buffer_disabled && !ibuf.Write(buf,n))
+			{
+				Handler().LogError(this, "OnRead", 0, "ibuf overflow", LOG_LEVEL_WARNING);
+			}
+		}
+		else
+		{
+			Handler().LogError(this, "OnRead", n, "abnormal value from recv", LOG_LEVEL_ERROR);
+		}
+	}
+	// unbuffered
+	if (n > 0 && n <= TCP_BUFSIZE_READ)
+	{
+		if (LineProtocol())
+		{
+			size_t x = 0;
+
+			buf[n] = 0;
+			int i = 0;
+			if (m_skip_c && (buf[i] == 13 || buf[i] == 10) && buf[i] != m_c)
+			{
+				m_skip_c = false;
+				i++;
+			}
+			for (; i < n && LineProtocol(); i++)
+			{
+				while ((buf[i] == 13 || buf[i] == 10) && LineProtocol())
+				{
+					char c = buf[i];
+					buf[i] = 0;
+					if (buf[x])
+					{
+						m_line += (buf + x);
+					}
+					OnLine( m_line );
+					i++;
+					m_skip_c = true;
+					m_c = c;
+					if (i < n && (buf[i] == 13 || buf[i] == 10) && buf[i] != c)
+					{
+						m_skip_c = false;
+						i++;
+					}
+					x = i;
+					m_line = "";
+				}
+				if (!LineProtocol())
+				{
+					break;
+				}
+			}
+			if (!LineProtocol())
+			{
+				if (i < n)
+				{
+					OnRawData(buf + i, n - i);
+				}
+			}
+			else
+			if (buf[x])
+			{
+				m_line += (buf + x);
+			}
+		}
+		else
+		{
+			OnRawData(buf, n);
+		}
+	}
+	if (m_b_input_buffer_disabled)
+	{
+		return;
+	}
+	// further processing: socks4
+#ifdef ENABLE_SOCKS4
+	if (Socks4())
+	{
+		bool need_more = false;
+		while (GetInputLength() && !need_more && !CloseAndDelete())
+		{
+			need_more = OnSocks4Read();
+		}
+	}
+#endif
 }
 
 
 void TcpSocket::OnWrite()
 {
-    if (IsSSL())
-    {
+	if (Connecting())
+	{
+		if (CheckConnect())
+		{
+			SetCallOnConnect();
+			return;
+		}
+		// failed
+#ifdef ENABLE_SOCKS4
+		if (Socks4())
+		{
+			OnSocks4ConnectFailed();
+			return;
+		}
+#endif
+		if (GetConnectionRetry() == -1 ||
+			(GetConnectionRetry() && GetConnectionRetries() < GetConnectionRetry()) )
+		{
+			// even though the connection failed at once, only retry after
+			// the connection timeout.
+			// should we even try to connect again, when CheckConnect returns
+			// false it's because of a connection error - not a timeout...
+			return;
+		}
+		SetConnecting(false);
+		SetCloseAndDelete( true );
+		/// \todo state reason why connect failed
+		OnConnectFailed();
+		return;
+	}
 #ifdef HAVE_OPENSSL
-/*
-    if (!Handler().Valid(this))
-        return;
-    if (!Ready())
-        return;
-*/
-        DEB(        printf("TcpSocket(SSL)::OnWrite()\n");)
-// TODO: check MES buffer
-            int n = SSL_write(m_ssl,obuf.GetStart(),obuf.GetL());
-        DEB(        printf("OnWrite: %d bytes sent\n",n);)
-            if (n == -1)
-        {
-// check code
-            SetCloseAndDelete(true);
-            DEB(            perror("write() error");)
-        }
-        else
-        if (!n)
-        {
-            SetCloseAndDelete(true);
-            DEB(            printf("write() returns 0\n");)
-        }
-        else
-        {
-            DEB(            printf(" %d bytes written\n",n);)
-                obuf.Remove(n);
-        }
-        {
-            bool br;
-            bool bw;
-            bool bx;
-            Handler().Get(GetSocket(), br, bw, bx);
-            if (obuf.GetLength())
-                Set(br, true);
-            else
-                Set(br, false);
-        }
-        return;
-#endif                                    // HAVE_OPENSSL
-    }
-/*
-    assert(GetSocket() != INVALID_SOCKET);
-    if (obuf.GetL() <= 0)
-    {
-printf("OnWrite abort because: nothing to write\n");
-        Set(true, false);
-        return;
-    }
-    assert(obuf.GetL() > 0);
-    if (!Handler().Valid(this))
-    {
-printf("OnWrite abort because: not valid\n");
-return;
-}
-if (!Ready())
-{
-printf("OnWrite abort because: not ready\n");
-return;
-}
-*/
-    int n = send(GetSocket(),obuf.GetStart(),(int)obuf.GetL(),MSG_NOSIGNAL);
+	if (IsSSL())
+	{
+		int n = SSL_write(m_ssl,obuf.GetStart(),(int)obuf.GetLength());
+		int errnr = n < 1 ? SSL_get_error(m_ssl, n) : 0;
+		if (n == -1)
+		{
+			if ( errnr != SSL_ERROR_WANT_READ && errnr != SSL_ERROR_WANT_WRITE )
+			{
+				SetCloseAndDelete(true);
+				SetFlushBeforeClose(false);
+#ifdef ENABLE_POOL
+				SetLost();
+#endif
+				const char *errbuf = ERR_error_string(errnr, NULL);
+				Handler().LogError(this, "OnWrite/SSL_write", errnr, errbuf, LOG_LEVEL_FATAL);
+			}
+		}
+		else
+		if (!n)
+		{
+			SetCloseAndDelete(true);
+			SetFlushBeforeClose(false);
+#ifdef ENABLE_POOL
+			SetLost();
+#endif
+DEB(			const char *errbuf = ERR_error_string(errnr, NULL);
+			fprintf(stderr, "SSL_write() returns 0: %d : %s\n",errnr, errbuf);)
+		}
+		else
+		{
+			m_bytes_sent += n;
+			if (GetTrafficMonitor())
+			{
+				GetTrafficMonitor() -> fwrite(obuf.GetStart(), 1, n);
+			}
+			obuf.Remove(n);
+			// move data from m_mes to immediate output buffer
+			while (obuf.Space() && m_mes.size())
+			{
+				ucharp_v::iterator it = m_mes.begin();
+				MES *p = *it;
+				if (obuf.Space() > p -> left())
+				{
+					obuf.Write(p -> curbuf(),p -> left());
+					delete p;
+					m_mes.erase(it);
+				}
+				else
+				{
+					size_t sz = obuf.Space();
+					obuf.Write(p -> curbuf(),sz);
+					p -> ptr += sz;
+				}
+			}
+		}
+		//
+		{
+			bool br;
+			bool bw;
+			bool bx;
+			Handler().Get(GetSocket(), br, bw, bx);
+			if (obuf.GetLength() || m_mes.size())
+				Set(br, true);
+			else
+				Set(br, false);
+		}
+		return;
+	}
+#endif // HAVE_OPENSSL
+	int n = send(GetSocket(),obuf.GetStart(),(int)obuf.GetLength(),MSG_NOSIGNAL);
 /*
 When writing onto a connection-oriented socket that has been shut down (by the  local
 or the remote end) SIGPIPE is sent to the writing process and EPIPE is returned.  The
 signal is not sent when the write call specified the MSG_NOSIGNAL flag.
 */
-    if (n == -1)
-    {
-// normal error codes:
-// WSAEWOULDBLOCK
-//       EAGAIN or EWOULDBLOCK
+	if (n == -1)
+	{
+	// normal error codes:
+	// WSAEWOULDBLOCK
+	//       EAGAIN or EWOULDBLOCK
 #ifdef _WIN32
-        if (Errno != WSAEWOULDBLOCK)
+		if (Errno != WSAEWOULDBLOCK)
 #else
-            if (Errno != EWOULDBLOCK)
+		if (Errno != EWOULDBLOCK)
 #endif
-        {
-            Handler().LogError(this, "write", Errno, StrError(Errno), LOG_LEVEL_FATAL);
-            SetCloseAndDelete(true);              // %!
-            SetLost();
-        }
-    }
-    else
-    if (!n)
-    {
+		{	
+			Handler().LogError(this, "send", Errno, StrError(Errno), LOG_LEVEL_FATAL);
+			SetCloseAndDelete(true);
+			SetFlushBeforeClose(false);
+#ifdef ENABLE_POOL
+			SetLost();
+#endif
+		}
+	}
+	else
+	if (!n)
+	{
 //		SetCloseAndDelete(true);
-    }
-    else
-    {
-        obuf.Remove(n);
-    }
-// check m_mes
-    while (obuf.Space() && m_mes.size())
-    {
-        ucharp_v::iterator it = m_mes.begin();
-        MES *p = *it;                             //m_mes[0];
-        if (obuf.Space() > p -> left())
-        {
-            obuf.Write(p -> curbuf(),p -> left());
-            delete p;
-//printf("\n m_mes erase()\n");
-            m_mes.erase(m_mes.begin());
-        }
-        else
-        {
-            size_t sz = obuf.Space();
-            obuf.Write(p -> curbuf(),sz);
-            p -> ptr += sz;
-        }
-    }
-    {
-        bool br;
-        bool bw;
-        bool bx;
-        Handler().Get(GetSocket(), br, bw, bx);
-        if (obuf.GetLength())
-            Set(br, true);
-        else
-        {
-            Set(br, false);
-//			OnWriteComplete();
-        }
-    }
+	}
+	else
+	{
+		m_bytes_sent += n;
+		if (GetTrafficMonitor())
+		{
+			GetTrafficMonitor() -> fwrite(obuf.GetStart(), 1, n);
+		}
+		obuf.Remove(n);
+		// move data from m_mes to immediate output buffer
+		while (obuf.Space() && m_mes.size())
+		{
+			ucharp_v::iterator it = m_mes.begin();
+			MES *p = *it;
+			if (obuf.Space() > p -> left())
+			{
+				obuf.Write(p -> curbuf(),p -> left());
+				delete p;
+				m_mes.erase(it);
+			}
+			else
+			{
+				size_t sz = obuf.Space();
+				obuf.Write(p -> curbuf(),sz);
+				p -> ptr += sz;
+			}
+		}
+	}
+	// set write flag if data still left to write
+	{
+		bool br;
+		bool bw;
+		bool bx;
+		Handler().Get(GetSocket(), br, bw, bx);
+		if (obuf.GetLength() || m_mes.size())
+			Set(br, true);
+		else
+			Set(br, false);
+	}
 }
 
 
-void TcpSocket::Send(const std::string &str)
+void TcpSocket::Send(const std::string &str,int i)
 {
-    SendBuf(str.c_str(),str.size());
+	SendBuf(str.c_str(),str.size(),i);
 }
 
 
-void TcpSocket::SendBuf(const char *buf,size_t len)
+void TcpSocket::SendBuf(const char *buf,size_t len,int)
 {
-    int n = (int)obuf.GetLength();
-    if (!Ready())
-    {
-// warning
-        Handler().LogError(this, "SendBuf", -1, "Attempt to write to a non-ready socket" );
-//	if (m_socket != INVALID_SOCKET && !Connecting() && !CloseAndDelete())
-//		Handler().LogError(this, "SendBuf: Data to Write", len, static_cast<std::string>(buf).substr(0,len).c_str(), LOG_LEVEL_INFO);
-        if (GetSocket() == INVALID_SOCKET)
-            Handler().LogError(this, "SendBuf", 0, " * GetSocket() == INVALID_SOCKET", LOG_LEVEL_INFO);
-        if (Connecting())
-            Handler().LogError(this, "SendBuf", 0, " * Connecting()", LOG_LEVEL_INFO);
-        if (CloseAndDelete())
-            Handler().LogError(this, "SendBuf", 0, " * CloseAndDelete()", LOG_LEVEL_INFO);
-        return;
-    }
-//DEB(	printf("trying to send %d bytes;  buf before = %d bytes\n",len,n);)
-    if (m_mes.size() || len > obuf.Space())
-    {
-        MES *p = new MES(buf,len);
-        m_mes.push_back(p);
-    }
-    if (m_mes.size())
-    {
-        while (obuf.Space() && m_mes.size())
-        {
-            ucharp_v::iterator it = m_mes.begin();
-            MES *p = *it;                         //m_mes[0];
-            if (obuf.Space() > p -> left())
-            {
-                obuf.Write(p -> curbuf(),p -> left());
-                delete p;
-                m_mes.erase(m_mes.begin());
-            }
-            else
-            {
-                size_t sz = obuf.Space();
-                obuf.Write(p -> curbuf(),sz);
-                p -> ptr += sz;
-            }
-        }
-    }
-    else
-    {
-        if (!obuf.Write(buf,len))
-        {
-            Handler().LogError(this, "SendBuf", -1, "Send overflow" );
-// overflow
-        }
-    }
-    if (!n)
-    {
-        OnWrite();
-    }
+	size_t n = obuf.GetLength();
+	if (!Ready() && !Connecting())
+	{
+		Handler().LogError(this, "SendBuf", -1, "Attempt to write to a non-ready socket" ); // warning
+		if (GetSocket() == INVALID_SOCKET)
+			Handler().LogError(this, "SendBuf", 0, " * GetSocket() == INVALID_SOCKET", LOG_LEVEL_INFO);
+		if (Connecting())
+			Handler().LogError(this, "SendBuf", 0, " * Connecting()", LOG_LEVEL_INFO);
+		if (CloseAndDelete())
+			Handler().LogError(this, "SendBuf", 0, " * CloseAndDelete()", LOG_LEVEL_INFO);
+		return;
+	}
+	if (!IsConnected())
+	{
+		Handler().LogError(this, "SendBuf", -1, "Attempt to write to a non-connected socket, will be sent on connect" ); // warning
+	}
+	//
+	size_t ptr = 0;
+	if (!m_mes.size() && obuf.Space())
+	{
+		if (len <= obuf.Space()) // entire block of data fits
+		{
+			ptr = len;
+			obuf.Write(buf, len);
+		}
+		else // a part of the block fits
+		{
+			ptr = obuf.Space();
+			obuf.Write(buf, ptr);
+		}
+	}
+	/// \todo check good value for max blocksize
+#define MAX_BLOCKSIZE 1024000
+	while (ptr < len) // data still left to buffer
+	{
+		size_t sz = len - ptr; // size of data block that has not been buffered
+		if (sz > MAX_BLOCKSIZE)
+			sz = MAX_BLOCKSIZE;
+		m_mes.push_back(new MES(buf + ptr, sz));
+		ptr += sz;
+	}
+	// kick a real write
+	if (!n && IsConnected())
+	{
+		OnWrite();
+	}
 }
 
 
 void TcpSocket::OnLine(const std::string& )
 {
-}
-
-
-void TcpSocket::ReadLine()
-{
-    if (ibuf.GetLength())
-    {
-        size_t x = 0;
-        size_t n = ibuf.GetLength();
-        char tmp[TCP_BUFSIZE_READ + 1];
-
-        n = (n >= TCP_BUFSIZE_READ) ? TCP_BUFSIZE_READ : n;
-        ibuf.Read(tmp,n);
-        tmp[n] = 0;
-
-        for (size_t i = 0; i < n; i++)
-        {
-            while (tmp[i] == 13 || tmp[i] == 10)
-            {
-                char c = tmp[i];
-                tmp[i] = 0;
-                if (tmp[x])
-                {
-                    m_line += (tmp + x);
-                }
-                OnLine( m_line );
-                i++;
-                if (i < n && (tmp[i] == 13 || tmp[i] == 10) && tmp[i] != c)
-                {
-                    i++;
-                }
-                x = i;
-                m_line = "";
-            }
-        }
-        if (tmp[x])
-        {
-            m_line += (tmp + x);
-        }
-    }
 }
 
 
@@ -644,382 +859,527 @@ TcpSocket::TcpSocket(const TcpSocket& s)
 ,obuf(*this,0)
 {
 }
-
-
 #ifdef _WIN32
 #pragma warning(default:4355)
 #endif
 
+
+#ifdef ENABLE_SOCKS4
 void TcpSocket::OnSocks4Connect()
 {
-    char request[1000];
-    request[0] = 4;                               // socks v4
-    request[1] = 1;                               // command code: CONNECT
-// send port in network byte order
-    unsigned short port = htons(GetClientRemotePort());
-    memcpy(request + 2, &port, 2);
-// ipaddr_t is already in network byte order
-    memcpy(request + 4, &GetClientRemoteAddr(), 4);
-    strcpy(request + 8, GetSocks4Userid().c_str());
-    size_t length = GetSocks4Userid().size() + 8 + 1;
-    SendBuf(request, length);
-    m_socks4_state = 0;
+	char request[1000];
+	memset(request, 0, sizeof(request));
+	request[0] = 4; // socks v4
+	request[1] = 1; // command code: CONNECT
+	{
+		std::auto_ptr<SocketAddress> ad = GetClientRemoteAddress();
+		if (ad.get())
+		{
+			struct sockaddr *p0 = (struct sockaddr *)*ad;
+			struct sockaddr_in *p = (struct sockaddr_in *)p0;
+			if (p -> sin_family == AF_INET)
+			{
+				memcpy(request + 2, &p -> sin_port, 2); // nwbo is ok here
+				memcpy(request + 4, &p -> sin_addr, sizeof(struct in_addr));
+			}
+			else
+			{
+				/// \todo warn
+			}
+		}
+		else
+		{
+			/// \todo warn
+		}
+	}
+	strcpy(request + 8, GetSocks4Userid().c_str());
+	size_t length = GetSocks4Userid().size() + 8 + 1;
+	SendBuf(request, length);
+	m_socks4_state = 0;
 }
 
 
 void TcpSocket::OnSocks4ConnectFailed()
 {
-    Handler().LogError(this,"OnSocks4ConnectFailed",0,"connection to socks4 server failed, trying direct connection",LOG_LEVEL_WARNING);
-    if (!Handler().Socks4TryDirect())
-    {
-        SetCloseAndDelete();
-        OnConnectFailed();                        // just in case
-    }
-    else
-    {
-        closesocket(GetSocket());
-// open directly
-        Open(GetClientRemoteAddr(), GetClientRemotePort(), true);
-    }
+	Handler().LogError(this,"OnSocks4ConnectFailed",0,"connection to socks4 server failed, trying direct connection",LOG_LEVEL_WARNING);
+	if (!Handler().Socks4TryDirect())
+	{
+		SetConnecting(false);
+		SetCloseAndDelete();
+		OnConnectFailed(); // just in case
+	}
+	else
+	{
+		SetRetryClientConnect();
+	}
 }
 
 
 bool TcpSocket::OnSocks4Read()
 {
-    switch (m_socks4_state)
-    {
-        case 0:
-            ibuf.Read(&m_socks4_vn, 1);
-            m_socks4_state = 1;
-            break;
-        case 1:
-            ibuf.Read(&m_socks4_cd, 1);
-            m_socks4_state = 2;
-            break;
-        case 2:
-            if (GetInputLength() > 1)
-            {
-                ibuf.Read( (char *)&m_socks4_dstport, 2);
-                m_socks4_state = 3;
-            }
-            else
-            {
-                return true;
-            }
-            break;
-        case 3:
-            if (GetInputLength() > 3)
-            {
-                ibuf.Read( (char *)&m_socks4_dstip, 4);
-                SetSocks4(false);
-
-                switch (m_socks4_cd)
-                {
-                    case 90:
-                        OnConnect();
-                        break;
-                    case 91:
-                    case 92:
-                    case 93:
-                        Handler().LogError(this,"OnSocks4Read",m_socks4_cd,"socks4 server reports connect failed",LOG_LEVEL_FATAL);
-                        SetCloseAndDelete();
-                        OnConnectFailed();
-                        break;
-                    default:
-                        Handler().LogError(this,"OnSocks4Read",m_socks4_cd,"socks4 server unrecognized response",LOG_LEVEL_FATAL);
-                        SetCloseAndDelete();
-                        break;
-                }
-            }
-            else
-            {
-                return true;
-            }
-            break;
-    }
-    return false;
+	switch (m_socks4_state)
+	{
+	case 0:
+		ibuf.Read(&m_socks4_vn, 1);
+		m_socks4_state = 1;
+		break;
+	case 1:
+		ibuf.Read(&m_socks4_cd, 1);
+		m_socks4_state = 2;
+		break;
+	case 2:
+		if (GetInputLength() > 1)
+		{
+			ibuf.Read( (char *)&m_socks4_dstport, 2);
+			m_socks4_state = 3;
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	case 3:
+		if (GetInputLength() > 3)
+		{
+			ibuf.Read( (char *)&m_socks4_dstip, 4);
+			SetSocks4(false);
+			
+			switch (m_socks4_cd)
+			{
+			case 90:
+				OnConnect();
+				Handler().LogError(this, "OnSocks4Read", 0, "Connection established", LOG_LEVEL_INFO);
+				break;
+			case 91:
+			case 92:
+			case 93:
+				Handler().LogError(this,"OnSocks4Read",m_socks4_cd,"socks4 server reports connect failed",LOG_LEVEL_FATAL);
+				SetConnecting(false);
+				SetCloseAndDelete();
+				OnConnectFailed();
+				break;
+			default:
+				Handler().LogError(this,"OnSocks4Read",m_socks4_cd,"socks4 server unrecognized response",LOG_LEVEL_FATAL);
+				SetCloseAndDelete();
+				break;
+			}
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	}
+	return false;
 }
+#endif
 
 
-void TcpSocket::Sendf(char const *format, ...)
+void TcpSocket::Sendf(const char *format, ...)
 {
-    va_list ap;
-    va_start(ap, format);
-    char slask[5000];
-    vsnprintf(slask, 5000, format, ap);
-    va_end(ap);
-    Send( slask );
+	va_list ap;
+	va_start(ap, format);
+	char slask[5000]; // vsprintf / vsnprintf temporary
+#ifdef _WIN32
+	vsprintf(slask, format, ap);
+#else
+	vsnprintf(slask, 5000, format, ap);
+#endif
+	va_end(ap);
+	Send( slask );
 }
 
 
+#ifdef HAVE_OPENSSL
 void TcpSocket::OnSSLConnect()
 {
-#ifdef HAVE_OPENSSL
-    DEB(    printf("TcpSocket(SSL)::OnConnect()\n");)
-        SetNonblocking(true);
-    {
-        if (m_context)
-        {
-            DEB(            printf("SSL Context already initialized - closing socket\n");)
-                SetCloseAndDelete(true);
-            return;
-        }
-        DEB(        printf("InitSSLClient()\n");)
-            InitSSLClient();
-    }
-    if (m_context)
-    {
-/* Connect the SSL socket */
-        m_ssl = SSL_new(m_context);
-        if (!m_ssl)
-        {
-            DEB(            printf(" m_ssl is NULL\n");)
-        }
-        m_sbio = BIO_new_socket(GetSocket(), BIO_NOCLOSE);
-        if (!m_sbio)
-        {
-            DEB(            printf(" m_sbio is NULL\n");)
-        }
-        SSL_set_bio(m_ssl, m_sbio, m_sbio);
-        if (!SSLNegotiate())
-            SetSSLNegotiate();
-    }
-    else
-    {
-        SetCloseAndDelete();
-    }
-#endif
+	SetNonblocking(true);
+	{
+		if (m_ssl_ctx)
+		{
+DEB(			fprintf(stderr, "SSL Context already initialized - closing socket\n");)
+			SetCloseAndDelete(true);
+			return;
+		}
+		InitSSLClient();
+	}
+	if (m_ssl_ctx)
+	{
+		/* Connect the SSL socket */
+		m_ssl = SSL_new(m_ssl_ctx);
+		if (!m_ssl)
+		{
+DEB(			fprintf(stderr, " m_ssl is NULL\n");)
+			SetCloseAndDelete(true);
+			return;
+		}
+		SSL_set_mode(m_ssl, SSL_MODE_AUTO_RETRY);
+		m_sbio = BIO_new_socket((int)GetSocket(), BIO_NOCLOSE);
+		if (!m_sbio)
+		{
+DEB(			fprintf(stderr, " m_sbio is NULL\n");)
+			SetCloseAndDelete(true);
+			return;
+		}
+		SSL_set_bio(m_ssl, m_sbio, m_sbio);
+//		if (!SSLNegotiate())
+		{
+			SetSSLNegotiate();
+		}
+	}
+	else
+	{
+		SetCloseAndDelete();
+	}
 }
 
 
 void TcpSocket::OnSSLAccept()
 {
-#ifdef HAVE_OPENSSL
-    DEB(    printf("TcpSocket(SSL)::OnAccept()\n");)
-        SetNonblocking(true);
-    {
-        if (m_context)
-        {
-            DEB(            printf("SSL Context already initialized - closing socket\n");)
-                SetCloseAndDelete(true);
-            return;
-        }
-        InitSSLServer();
-        SetSSLServer();
-    }
-    if (m_context)
-    {
-        m_ssl = SSL_new(m_context);
-        if (!m_ssl)
-        {
-            DEB(            printf(" m_ssl is NULL\n");)
-        }
-        m_sbio = BIO_new_socket(GetSocket(), BIO_NOCLOSE);
-        if (!m_sbio)
-        {
-            DEB(            printf(" m_sbio is NULL\n");)
-        }
-        SSL_set_bio(m_ssl, m_sbio, m_sbio);
-        if (!SSLNegotiate())
-            SetSSLNegotiate();
-    }
-#endif
+	SetNonblocking(true);
+	{
+		if (m_ssl_ctx)
+		{
+DEB(			fprintf(stderr, "SSL Context already initialized - closing socket\n");)
+			SetCloseAndDelete(true);
+			return;
+		}
+		InitSSLServer();
+		SetSSLServer();
+	}
+	if (m_ssl_ctx)
+	{
+		m_ssl = SSL_new(m_ssl_ctx);
+		if (!m_ssl)
+		{
+DEB(			fprintf(stderr, " m_ssl is NULL\n");)
+			SetCloseAndDelete(true);
+			return;
+		}
+		SSL_set_mode(m_ssl, SSL_MODE_AUTO_RETRY);
+		m_sbio = BIO_new_socket((int)GetSocket(), BIO_NOCLOSE);
+		if (!m_sbio)
+		{
+DEB(			fprintf(stderr, " m_sbio is NULL\n");)
+			SetCloseAndDelete(true);
+			return;
+		}
+		SSL_set_bio(m_ssl, m_sbio, m_sbio);
+//		if (!SSLNegotiate())
+		{
+			SetSSLNegotiate();
+		}
+	}
 }
 
 
 bool TcpSocket::SSLNegotiate()
 {
-#ifdef HAVE_OPENSSL
-    if (!IsSSLServer())                           // client
-    {
-        DEB(        printf("TcpSocket::SSLNegotiate() is_client\n");)
-            int r = SSL_connect(m_ssl);
-        DEB(        printf(" SSLNegotiate is_client, SSL_connect returns %d\n",r);)
-            if (r > 0)
-        {
-            SetSSLNegotiate(false);
-// TODO: resurrect certificate check... client
+	if (!IsSSLServer()) // client
+	{
+		int r = SSL_connect(m_ssl);
+		if (r > 0)
+		{
+			SetSSLNegotiate(false);
+			/// \todo: resurrect certificate check... client
 //			CheckCertificateChain( "");//ServerHOST);
-            SetNonblocking(false);
-            DEB(            printf("TcpSocket::SSLNegotiate() init OK\n");)
-                OnConnect();
-            return true;
-        }
-        else
-        if (!r)
-        {
-            SetSSLNegotiate(false);
-            SetCloseAndDelete();
-        }
-        else
-        {
-            r = SSL_get_error(m_ssl, r);
-            if (r != SSL_ERROR_WANT_READ && r != SSL_ERROR_WANT_WRITE)
-            {
-                DEB(                printf("SSL_connect() failed - closing socket, return code: %d\n",r);)
-                    SetSSLNegotiate(false);
-                SetCloseAndDelete(true);
-            }
-        }
-    }
-    else                                          // server
-    {
-        DEB(        printf("TcpSocket::SSLNegotiate() is_server\n");)
-            int r = SSL_accept(m_ssl);
-        DEB(        printf(" SSLNegotiate is_server, SSL_accept returns %d\n",r);)
-            if (r > 0)
-        {
-            SetSSLNegotiate(false);
-// TODO: resurrect certificate check... server
+			SetNonblocking(false);
+			//
+			{
+				SetConnected();
+				if (GetOutputLength())
+				{
+					OnWrite();
+				}
+			}
+#ifdef ENABLE_RECONNECT
+			if (IsReconnect())
+				OnReconnect();
+			else
+#endif
+			{
+				OnConnect();
+			}
+			Handler().LogError(this, "SSLNegotiate/SSL_connect", 0, "Connection established", LOG_LEVEL_INFO);
+			return true;
+		}
+		else
+		if (!r)
+		{
+			Handler().LogError(this, "SSLNegotiate/SSL_connect", 0, "Connection failed", LOG_LEVEL_INFO);
+			SetSSLNegotiate(false);
+			SetCloseAndDelete();
+			OnSSLConnectFailed();
+		}
+		else
+		{
+			r = SSL_get_error(m_ssl, r);
+			if (r != SSL_ERROR_WANT_READ && r != SSL_ERROR_WANT_WRITE)
+			{
+				Handler().LogError(this, "SSLNegotiate/SSL_connect", -1, "Connection failed", LOG_LEVEL_INFO);
+DEB(				fprintf(stderr, "SSL_connect() failed - closing socket, return code: %d\n",r);)
+				SetSSLNegotiate(false);
+				SetCloseAndDelete(true);
+				OnSSLConnectFailed();
+			}
+		}
+	}
+	else // server
+	{
+		int r = SSL_accept(m_ssl);
+		if (r > 0)
+		{
+			SetSSLNegotiate(false);
+			/// \todo: resurrect certificate check... server
 //			CheckCertificateChain( "");//ClientHOST);
-            SetNonblocking(false);
-            DEB(            printf("TcpSocket::SSLNegotiate() init OK\n");)
-                OnAccept();
-            return true;
-        }
-        else
-        if (!r)
-        {
-            SetSSLNegotiate(false);
-            SetCloseAndDelete();
-        }
-        else
-        {
-            r = SSL_get_error(m_ssl, r);
-            if (r != SSL_ERROR_WANT_READ && r != SSL_ERROR_WANT_WRITE)
-            {
-                DEB(                printf("SSL_accept() failed - closing socket, return code: %d\n",r);)
-                    SetSSLNegotiate(false);
-                SetCloseAndDelete(true);
-            }
-        }
-    }
-#endif                                        // HAVE_OPENSSL
-    return false;
+			SetNonblocking(false);
+			//
+			{
+				SetConnected();
+				if (GetOutputLength())
+				{
+					OnWrite();
+				}
+			}
+			OnAccept();
+			Handler().LogError(this, "SSLNegotiate/SSL_accept", 0, "Connection established", LOG_LEVEL_INFO);
+			return true;
+		}
+		else
+		if (!r)
+		{
+			Handler().LogError(this, "SSLNegotiate/SSL_accept", 0, "Connection failed", LOG_LEVEL_INFO);
+			SetSSLNegotiate(false);
+			SetCloseAndDelete();
+			OnSSLAcceptFailed();
+		}
+		else
+		{
+			r = SSL_get_error(m_ssl, r);
+			if (r != SSL_ERROR_WANT_READ && r != SSL_ERROR_WANT_WRITE)
+			{
+				Handler().LogError(this, "SSLNegotiate/SSL_accept", -1, "Connection failed", LOG_LEVEL_INFO);
+DEB(				fprintf(stderr, "SSL_accept() failed - closing socket, return code: %d\n",r);)
+				SetSSLNegotiate(false);
+				SetCloseAndDelete(true);
+				OnSSLAcceptFailed();
+			}
+		}
+	}
+	return false;
 }
 
 
 void TcpSocket::InitSSLClient()
 {
-#ifdef HAVE_OPENSSL
-//	InitializeContext();
-    InitializeContext(SSLv23_method());
-#endif
+	InitializeContext("", SSLv23_method());
 }
 
 
 void TcpSocket::InitSSLServer()
 {
+	Handler().LogError(this, "InitSSLServer", 0, "You MUST implement your own InitSSLServer method", LOG_LEVEL_FATAL);
+	SetCloseAndDelete();
 }
 
 
-#ifdef HAVE_OPENSSL
-void TcpSocket::InitializeContext(SSL_METHOD *meth_in)
+void TcpSocket::InitializeContext(const std::string& context, SSL_METHOD *meth_in)
 {
-    SSL_METHOD *meth;
-
-    if (!bio_err)
-    {
-/* An error write context */
-        bio_err = BIO_new_fp(stderr, BIO_NOCLOSE);
-
-/* Global system initialization*/
-        SSL_library_init();
-        SSL_load_error_strings();
-        OpenSSL_add_all_algorithms();
-    }
-
-/* Create our context*/
-    meth = meth_in ? meth_in : SSLv3_method();
-    m_context = SSL_CTX_new(meth);
-
-/* Load the CAs we trust*/
-/*
-    if (!(SSL_CTX_load_verify_locations(m_context, CA_LIST, 0)))
-    {
-DEB(		printf("Couldn't read CA list\n");)
-    }
-    SSL_CTX_set_verify_depth(m_context, 1);
-    SSL_CTX_set_verify(m_context, SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT, verify_cb);
-*/
-
-/* Load randomness */
-    if (!(RAND_load_file(RANDOM, 1024*1024)))
-    {
-        DEB(        printf("Couldn't load randomness\n");)
-    }
-
+	/* Create our context*/
+	static std::map<std::string, SSL_CTX *> client_contexts;
+	if (client_contexts.find(context) == client_contexts.end())
+	{
+		SSL_METHOD *meth = meth_in ? meth_in : SSLv3_method();
+		m_ssl_ctx = client_contexts[context] = SSL_CTX_new(meth);
+		SSL_CTX_set_mode(m_ssl_ctx, SSL_MODE_AUTO_RETRY);
+	}
+	else
+	{
+		m_ssl_ctx = client_contexts[context];
+	}
 }
 
 
-void TcpSocket::InitializeContext(const std::string& keyfile,const std::string& password,SSL_METHOD *meth_in)
+void TcpSocket::InitializeContext(const std::string& context,const std::string& keyfile,const std::string& password,SSL_METHOD *meth_in)
 {
-    SSL_METHOD *meth;
+	/* Create our context*/
+	static std::map<std::string, SSL_CTX *> server_contexts;
+	if (server_contexts.find(context) == server_contexts.end())
+	{
+		SSL_METHOD *meth = meth_in ? meth_in : SSLv3_method();
+		m_ssl_ctx = server_contexts[context] = SSL_CTX_new(meth);
+		SSL_CTX_set_mode(m_ssl_ctx, SSL_MODE_AUTO_RETRY);
+		// session id
+		if (context.size())
+			SSL_CTX_set_session_id_context(m_ssl_ctx, (const unsigned char *)context.c_str(), (unsigned int)context.size());
+		else
+			SSL_CTX_set_session_id_context(m_ssl_ctx, (const unsigned char *)"--empty--", 9);
+	}
+	else
+	{
+		m_ssl_ctx = server_contexts[context];
+	}
 
-    if (!bio_err)
-    {
-/* An error write context */
-        bio_err = BIO_new_fp(stderr, BIO_NOCLOSE);
+	/* Load our keys and certificates*/
+	if (!(SSL_CTX_use_certificate_file(m_ssl_ctx, keyfile.c_str(), SSL_FILETYPE_PEM)))
+	{
+		Handler().LogError(this, "TcpSocket InitializeContext", 0, "Couldn't read certificate file " + keyfile, LOG_LEVEL_FATAL);
+	}
 
-/* Global system initialization*/
-        SSL_library_init();
-        SSL_load_error_strings();
-        OpenSSL_add_all_algorithms();
-    }
-
-/* Create our context*/
-    meth = meth_in ? meth_in : SSLv3_method();
-    m_context = SSL_CTX_new(meth);
-
-/* Load our keys and certificates*/
-    if (!(SSL_CTX_use_certificate_file(m_context, keyfile.c_str(), SSL_FILETYPE_PEM)))
-    {
-        DEB(        printf("Couldn't read certificate file\n");)
-    }
-
-    m_password = password;
-    SSL_CTX_set_default_passwd_cb(m_context, password_cb);
-    if (!(SSL_CTX_use_PrivateKey_file(m_context, keyfile.c_str(), SSL_FILETYPE_PEM)))
-    {
-        DEB(        printf("Couldn't read key file\n");)
-    }
-
-/* Load the CAs we trust*/
-/*
-    if (!(SSL_CTX_load_verify_locations(m_context, CA_LIST, 0)))
-    {
-DEB(		printf("Couldn't read CA list\n");)
-    }
-    SSL_CTX_set_verify_depth(m_context, 1);
-    SSL_CTX_set_verify(m_context, SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT, verify_cb);
-*/
-
-/* Load randomness */
-    if (!(RAND_load_file(RANDOM, 1024*1024)))
-    {
-        DEB(        printf("Couldn't load randomness\n");)
-    }
-
+	m_password = password;
+	SSL_CTX_set_default_passwd_cb(m_ssl_ctx, SSL_password_cb);
+	SSL_CTX_set_default_passwd_cb_userdata(m_ssl_ctx, this);
+	if (!(SSL_CTX_use_PrivateKey_file(m_ssl_ctx, keyfile.c_str(), SSL_FILETYPE_PEM)))
+	{
+		Handler().LogError(this, "TcpSocket InitializeContext", 0, "Couldn't read private key file " + keyfile, LOG_LEVEL_FATAL);
+	}
 }
 
 
-// static
-int TcpSocket::password_cb(char *buf,int num,int rwflag,void *userdata)
+int TcpSocket::SSL_password_cb(char *buf,int num,int rwflag,void *userdata)
 {
-    if ( (size_t)num < m_password.size() + 1)
-    {
-        return 0;
-    }
-    strcpy(buf,m_password.c_str());
-    return m_password.size();
+	Socket *p0 = static_cast<Socket *>(userdata);
+	TcpSocket *p = dynamic_cast<TcpSocket *>(p0);
+	std::string pw = p ? p -> GetPassword() : "";
+	if ( (size_t)num < pw.size() + 1)
+	{
+		return 0;
+	}
+	strcpy(buf,pw.c_str());
+	return (int)pw.size();
 }
-#endif                                            // HAVE_OPENSSL
+#endif // HAVE_OPENSSL
+
 
 int TcpSocket::Close()
 {
 #ifdef HAVE_OPENSSL
-    if (IsSSL())
-        SSL_shutdown(m_ssl);
+	if (IsSSL() && m_ssl)
+		SSL_shutdown(m_ssl);
+	if (m_ssl)
+	{
+		SSL_free(m_ssl);
+		m_ssl = NULL;
+	}
 #endif
-    return Socket::Close();
+	return Socket::Close();
 }
+
+
+#ifdef HAVE_OPENSSL
+SSL_CTX *TcpSocket::GetSslContext()
+{
+	if (!m_ssl_ctx)
+		Handler().LogError(this, "GetSslContext", 0, "SSL Context is NULL; check InitSSLServer/InitSSLClient", LOG_LEVEL_WARNING);
+	return m_ssl_ctx;
+}
+
+SSL *TcpSocket::GetSsl()
+{
+	if (!m_ssl)
+		Handler().LogError(this, "GetSsl", 0, "SSL is NULL; check InitSSLServer/InitSSLClient", LOG_LEVEL_WARNING);
+	return m_ssl;
+}
+#endif
+
+
+#ifdef ENABLE_RECONNECT
+void TcpSocket::SetReconnect(bool x)
+{
+	m_b_reconnect = x;
+}
+#endif
+
+
+void TcpSocket::OnRawData(const char *buf_in,size_t len)
+{
+}
+
+
+size_t TcpSocket::GetInputLength()
+{
+	return ibuf.GetLength();
+}
+
+
+size_t TcpSocket::GetOutputLength()
+{
+	return obuf.GetLength();
+}
+
+
+uint64_t TcpSocket::GetBytesReceived(bool clear)
+{
+	uint64_t z = m_bytes_received;
+	if (clear)
+		m_bytes_received = 0;
+	return z;
+}
+
+
+uint64_t TcpSocket::GetBytesSent(bool clear)
+{
+	uint64_t z = m_bytes_sent;
+	if (clear)
+		m_bytes_sent = 0;
+	return z;
+}
+
+
+#ifdef ENABLE_RECONNECT
+bool TcpSocket::Reconnect()
+{
+	return m_b_reconnect;
+}
+
+
+void TcpSocket::SetIsReconnect(bool x)
+{
+	m_b_is_reconnect = x;
+}
+
+
+bool TcpSocket::IsReconnect()
+{
+	return m_b_is_reconnect;
+}
+#endif
+
+
+#ifdef HAVE_OPENSSL
+const std::string& TcpSocket::GetPassword()
+{
+	return m_password;
+}
+#endif
+
+
+void TcpSocket::DisableInputBuffer(bool x)
+{
+	m_b_input_buffer_disabled = x;
+}
+
+
+void TcpSocket::OnOptions(int family,int type,int protocol,SOCKET s)
+{
+DEB(	fprintf(stderr, "Socket::OnOptions()\n");)
+/*
+	Handler().LogError(this, "OnOptions", family, "Address Family", LOG_LEVEL_INFO);
+	Handler().LogError(this, "OnOptions", type, "Type", LOG_LEVEL_INFO);
+	Handler().LogError(this, "OnOptions", protocol, "Protocol", LOG_LEVEL_INFO);
+*/
+	SetReuse(true);
+	SetKeepalive(true);
+}
+
+
+void TcpSocket::SetLineProtocol(bool x)
+{
+	Socket::SetLineProtocol(x);
+	DisableInputBuffer(x);
+}
+
+
+#ifdef SOCKETS_NAMESPACE
+}
+#endif

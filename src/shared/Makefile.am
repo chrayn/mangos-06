@@ -94,37 +94,23 @@ libmangosdatabase_a_SOURCES = \
 
 libmangosnetwork_a_SOURCES = \
 	Network/Base64.cpp \
-	Network/Base64.h \
 	Network/CircularBuffer.cpp \
-	Network/CircularBuffer.h \
-	Network/ListenSocket.h \
+	Network/Ipv4Address.cpp \
+	Network/Ipv6Address.cpp \
+	Network/ISocketHandler.cpp \
+	Network/Mutex.cpp \
 	Network/Parse.cpp \
-	Network/Parse.h \
-	Network/PoolSocket.cpp \
-	Network/PoolSocket.h \
+	Network/RandomNumber.cpp \
 	Network/ResolvServer.cpp \
-	Network/ResolvServer.h \
 	Network/ResolvSocket.cpp \
-	Network/ResolvSocket.h \
 	Network/Socket.cpp \
-	Network/Socket.h \
 	Network/SocketHandler.cpp \
-	Network/SocketHandler.h \
-	Network/SocketThread.cpp \
-	Network/SocketThread.h \
-	Network/StdLog.h \
-	Network/StdoutLog.cpp \
-	Network/StdoutLog.h \
-	Network/TcpSocket.cpp \
-	Network/TcpSocket.h \
-	Network/Thread.cpp \
-	Network/Thread.h \
-	Network/UdpSocket.cpp \
-	Network/UdpSocket.h \
-	Network/Utility.cpp \
-	Network/Utility.h \
 	Network/socket_include.cpp \
-	Network/socket_include.h
+	Network/StdoutLog.cpp \
+	Network/TcpSocket.cpp \
+	Network/Thread.cpp \
+	Network/UdpSocket.cpp \
+	Network/Utility.cpp
 
 ## Additional files to include when running 'make dist'
 #  Disabled packet logger

@@ -1,10 +1,17 @@
-/**
- **	File ......... Socket.cpp
- **	Published ....  2004-02-13
- **	Author ....... grymse@alhem.net
- **/
+/** \file Socket.cpp
+ **	\date  2004-02-13
+ **	\author grymse@alhem.net
+**/
 /*
-Copyright (C) 2004,2005  Anders Hedstrom
+Copyright (C) 2004-2007  Anders Hedstrom
+
+This library is made available under the terms of the GNU GPL.
+
+If you would like to use this library in a closed-source application,
+a separate license agreement is available. For information about
+the closed-source license agreement for the C++ sockets library,
+please visit http://www.alhem.net/Sockets/license.html and/or
+email license@alhem.net.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -20,80 +27,109 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
+#include "Socket.h"
 #ifdef _WIN32
 #pragma warning(disable:4786)
 #include <stdlib.h>
 #else
 #include <errno.h>
+#include <netdb.h>
 #endif
-#include <stdio.h>
 #include <ctype.h>
 #include <fcntl.h>
-#include "Parse.h"
-#include "SocketHandler.h"
-#include "SocketThread.h"
+
+#include "ISocketHandler.h"
 #include "Utility.h"
 
-#include "Socket.h"
+#include "TcpSocket.h"
+#include "SocketAddress.h"
+#include "SocketHandler.h"
 
 #ifdef _DEBUG
-#define DEB(x) x
+//#define DEB(x) x; fflush(stderr);
+#define DEB(x) 
 #else
 #define DEB(x)
 #endif
+
+#ifdef SOCKETS_NAMESPACE
+namespace SOCKETS_NAMESPACE {
+#endif
+
 
 // statics
 #ifdef _WIN32
 WSAInitializer Socket::m_winsock_init;
 #endif
 
-Socket::Socket(SocketHandler& h)
-:m_handler(h)
+
+Socket::Socket(ISocketHandler& h)
+:m_prng( true )
+,m_handler(h)
 ,m_socket( INVALID_SOCKET )
 ,m_bDel(false)
 ,m_bClose(false)
 ,m_bConnecting(false)
 ,m_tCreate(time(NULL))
 ,m_line_protocol(false)
-,m_ssl_connecting(false)
-//, m_tActive(time(NULL))
-//, m_timeout(0)
-,m_detach(false)
-,m_detached(false)
-,m_pThread(NULL)
+#ifdef ENABLE_IPV6
 ,m_ipv6(false)
-,m_sa_len(0)
+#endif
 ,m_parent(NULL)
+,m_call_on_connect(false)
+,m_opt_reuse(true)
+,m_opt_keepalive(true)
+,m_connect_timeout(5)
+,m_b_disable_read(false)
+,m_b_retry_connect(false)
+,m_connected(false)
+,m_flush_before_close(true)
+,m_connection_retry(0)
+,m_retries(0)
+,m_b_erased_by_handler(false)
+,m_tClose(0)
+,m_shutdown(0)
+,m_client_remote_address(NULL)
+,m_remote_address(NULL)
+,m_traffic_monitor(NULL)
+#ifdef HAVE_OPENSSL
+,m_b_enable_ssl(false)
+,m_b_ssl(false)
+,m_b_ssl_server(false)
+#endif
+#ifdef ENABLE_POOL
 ,m_socket_type(0)
 ,m_bClient(false)
 ,m_bRetain(false)
 ,m_bLost(false)
-,m_call_on_connect(false)
-,m_opt_reuse(true)
-,m_opt_keepalive(true)
+#endif
+#ifdef ENABLE_SOCKS4
 ,m_bSocks4(false)
 ,m_socks4_host(h.GetSocks4Host())
 ,m_socks4_port(h.GetSocks4Port())
 ,m_socks4_userid(h.GetSocks4Userid())
-,m_connect_timeout(5)
-,m_b_enable_ssl(false)
-,m_b_ssl(false)
-,m_b_ssl_server(false)
-,m_b_disable_read(false)
+#endif
+#ifdef ENABLE_DETACH
+,m_detach(false)
+,m_detached(false)
+,m_pThread(NULL)
+,m_slave_handler(NULL)
+#endif
 {
 }
 
 
 Socket::~Socket()
 {
-    if (m_socket != INVALID_SOCKET && !m_bRetain)
-    {
-        Close();
-    }
-    if (m_pThread)
-    {
-        delete m_pThread;
-    }
+	Handler().Remove(this);
+	if (m_socket != INVALID_SOCKET
+#ifdef ENABLE_POOL
+		 && !m_bRetain
+#endif
+		)
+	{
+		Close();
+	}
 }
 
 
@@ -114,16 +150,42 @@ void Socket::OnWrite()
 
 void Socket::OnException()
 {
-// errno valid here?
-    int err;
-    socklen_t errlen = sizeof(err);
 #ifdef _WIN32
-    getsockopt(m_socket, SOL_SOCKET, SO_ERROR, (char *)&err, &errlen);
-#else
-    getsockopt(m_socket, SOL_SOCKET, SO_ERROR, &err, &errlen);
+	if (Connecting())
+	{
+#ifdef ENABLE_SOCKS4
+		if (Socks4())
+			OnSocks4ConnectFailed();
+		else
 #endif
-    Handler().LogError(this, "exception on select", Errno, StrError(Errno), LOG_LEVEL_FATAL);
-    SetCloseAndDelete();
+		if (GetConnectionRetry() == -1 ||
+			(GetConnectionRetry() &&
+			 GetConnectionRetries() < GetConnectionRetry() ))
+		{
+			// even though the connection failed at once, only retry after
+			// the connection timeout
+			// should we even try to connect again, when CheckConnect returns
+			// false it's because of a connection error - not a timeout...
+		}
+		else
+		{
+			SetConnecting(false); // tnx snibbe
+			SetCloseAndDelete();
+			OnConnectFailed();
+		}
+		return;
+	}
+#endif
+	// errno valid here?
+	int err;
+	socklen_t errlen = sizeof(err);
+#ifdef _WIN32
+	getsockopt(m_socket, SOL_SOCKET, SO_ERROR, (char *)&err, &errlen);
+#else
+	getsockopt(m_socket, SOL_SOCKET, SO_ERROR, &err, &errlen);
+#endif
+	Handler().LogError(this, "exception on select", err, StrError(err), LOG_LEVEL_FATAL);
+	SetCloseAndDelete();
 }
 
 
@@ -139,26 +201,31 @@ void Socket::OnConnect()
 
 bool Socket::CheckConnect()
 {
-    int err;
-    socklen_t errlen = sizeof(err);
-    bool r = true;
+	int err;
+	socklen_t errlen = sizeof(err);
+	bool r = true;
 #ifdef _WIN32
-    getsockopt(m_socket, SOL_SOCKET, SO_ERROR, (char *)&err, &errlen);
+	getsockopt(m_socket, SOL_SOCKET, SO_ERROR, (char *)&err, &errlen);
 #else
-    getsockopt(m_socket, SOL_SOCKET, SO_ERROR, &err, &errlen);
+	getsockopt(m_socket, SOL_SOCKET, SO_ERROR, &err, &errlen);
 #endif
-    if (err)
-    {
-        Handler().LogError(this, "connect failed", err, StrError(err), LOG_LEVEL_FATAL);
-        r = false;
-    }
-    SetConnecting(false);
-// %! add to read fd_set here
-    if (r)                                        // ok
-    {
-        Set(!IsDisableRead(), false);
-    }
-    return r;
+	if (err)
+	{
+		Handler().LogError(this, "connect failed", err, StrError(err), LOG_LEVEL_FATAL);
+		r = false;
+	}
+	// don't reset connecting flag on error here, we want the OnConnectFailed timeout later on
+	/// \todo add to read fd_set here
+	if (r) // ok
+	{
+		Set(!IsDisableRead(), false);
+		SetConnecting(false);
+	}
+	else
+	{
+		Set(false, false); // no more monitoring because connection failed
+	}
+	return r;
 }
 
 
@@ -169,570 +236,314 @@ void Socket::OnAccept()
 
 int Socket::Close()
 {
-    if (m_socket == INVALID_SOCKET)               // this could happen
-    {
-        Handler().LogError(this, "Socket::Close", 0, "file descriptor invalid", LOG_LEVEL_WARNING);
-        return 0;
-    }
-    int n;
-    SetNonblocking(true);
-    if (shutdown(m_socket, SHUT_RDWR) == -1)
-    {
-// failed...
-        Handler().LogError(this, "shutdown", Errno, StrError(Errno), LOG_LEVEL_ERROR);
-    }
-//
-    char tmp[100];
-    if ((n = recv(m_socket,tmp,100,0)) == -1)
-    {
+DEB(	fprintf(stderr, " fd %d\n", m_socket);)
+	if (m_socket == INVALID_SOCKET) // this could happen
+	{
+		Handler().LogError(this, "Socket::Close", 0, "file descriptor invalid", LOG_LEVEL_WARNING);
+		return 0;
+	}
+	int n;
+	SetNonblocking(true);
+	if (IsConnected() && !(GetShutdown() & SHUT_WR))
+	{
+		if (shutdown(m_socket, SHUT_WR) == -1)
+		{
+			// failed...
+			Handler().LogError(this, "shutdown", Errno, StrError(Errno), LOG_LEVEL_ERROR);
+		}
+	}
+	//
+	char tmp[100];
+	if ((n = recv(m_socket,tmp,100,0)) == -1)
+	{
 //		Handler().LogError(this, "read() after shutdown", Errno, StrError(Errno), LOG_LEVEL_WARNING);
-    }
-    else
-    {
-        if (n)
-            Handler().LogError(this, "read() after shutdown", n, "bytes read", LOG_LEVEL_WARNING);
-    }
-    if ((n = closesocket(m_socket)) == -1)
-    {
-// failed...
-        Handler().LogError(this, "close", Errno, StrError(Errno), LOG_LEVEL_ERROR);
-    }
-    m_socket = INVALID_SOCKET;
-    return n;
-}
-
-
-SOCKET Socket::CreateSocket4(int type, const std::string& protocol)
-{
-    struct protoent *p = NULL;
-    int optval;
-    SOCKET s;
-
-    m_socket_type = type;
-    m_socket_protocol = protocol;
-    if (protocol.size())
-    {
-        p = getprotobyname( protocol.c_str() );
-        if (!p)
-        {
-            Handler().LogError(this, "getprotobyname", Errno, StrError(Errno), LOG_LEVEL_FATAL);
-            return INVALID_SOCKET;
-        }
-    }
-    int protno = p ? p -> p_proto : 0;
-
-    s = socket(AF_INET, type, protno);
-    if (s == INVALID_SOCKET)
-    {
-        Handler().LogError(this, "socket", Errno, StrError(Errno), LOG_LEVEL_FATAL);
-        return INVALID_SOCKET;
-    }
-    OnOptions(AF_INET, type, protno, s);
-    if (type == SOCK_STREAM)
-    {
-        optval = m_opt_reuse ? 1 : 0;
-        if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)&optval, sizeof(optval)) == -1)
-        {
-            Handler().LogError(this, "setsockopt(SOL_SOCKET, SO_REUSEADDR)", Errno, StrError(Errno), LOG_LEVEL_FATAL);
-            closesocket(s);
-            return INVALID_SOCKET;
-        }
-
-        optval = m_opt_keepalive ? 1 : 0;
-        if (setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (char *)&optval, sizeof(optval)) == -1)
-        {
-            Handler().LogError(this, "setsockopt(SOL_SOCKET, SO_KEEPALIVE)", Errno, StrError(Errno), LOG_LEVEL_FATAL);
-            closesocket(s);
-            return INVALID_SOCKET;
-        }
-	    optval = 1;
-	    setsockopt(s, 0x06, TCP_NODELAY, (char *)&optval,sizeof(optval));
-    }
-
-    return s;
-}
-
-
-#ifdef IPPROTO_IPV6
-SOCKET Socket::CreateSocket6(int type, const std::string& protocol)
-{
-    struct protoent *p = NULL;
-    int optval;
-    SOCKET s;
-
-    m_socket_type = type;
-    m_socket_protocol = protocol;
-    if (protocol.size())
-    {
-        p = getprotobyname( protocol.c_str() );
-        if (!p)
-        {
-            Handler().LogError(this, "getprotobyname", Errno, StrError(Errno), LOG_LEVEL_FATAL);
-            return INVALID_SOCKET;
-        }
-    }
-    int protno = p ? p -> p_proto : 0;
-
-    s = socket(AF_INET6, type, protno);
-    if (s == INVALID_SOCKET)
-    {
-        Handler().LogError(this, "socket", Errno, StrError(Errno), LOG_LEVEL_FATAL);
-        return INVALID_SOCKET;
-    }
-    OnOptions(AF_INET6, type, protno, s);
-    if (type == SOCK_STREAM)
-    {
-        optval = m_opt_reuse ? 1 : 0;
-        if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)&optval, sizeof(optval)) == -1)
-        {
-            Handler().LogError(this, "setsockopt(SOL_SOCKET, SO_REUSEADDR)", Errno, StrError(Errno), LOG_LEVEL_FATAL);
-            closesocket(s);
-            return INVALID_SOCKET;
-        }
-
-        optval = m_opt_keepalive ? 1 : 0;
-        if (setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (char *)&optval, sizeof(optval)) == -1)
-        {
-            Handler().LogError(this, "setsockopt(SOL_SOCKET, SO_KEEPALIVE)", Errno, StrError(Errno), LOG_LEVEL_FATAL);
-            closesocket(s);
-            return INVALID_SOCKET;
-        }
-    }
-    m_ipv6 = true;
-    return s;
-}
+	}
+	else
+	{
+		if (n)
+		{
+			Handler().LogError(this, "read() after shutdown", n, "bytes read", LOG_LEVEL_WARNING);
+		}
+	}
+	if ((n = closesocket(m_socket)) == -1)
+	{
+		// failed...
+		Handler().LogError(this, "close", Errno, StrError(Errno), LOG_LEVEL_ERROR);
+	}
+	Set(false, false, false); // remove from fd_set's
+	Handler().AddList(m_socket, LIST_CALLONCONNECT, false);
+#ifdef ENABLE_DETACH
+	Handler().AddList(m_socket, LIST_DETACH, false);
 #endif
-
-bool Socket::isip(const std::string& str)
-{
-    if (m_ipv6)
-    {
-        size_t qc = 0;
-        size_t qd = 0;
-        for (size_t i = 0; i < str.size(); i++)
-        {
-            qc += (str[i] == ':') ? 1 : 0;
-            qd += (str[i] == '.') ? 1 : 0;
-        }
-        if (qc > 7)
-        {
-            return false;
-        }
-        if (qd && qd != 3)
-        {
-            return false;
-        }
-        Parse pa(str,":.");
-        std::string tmp = pa.getword();
-        while (tmp.size())
-        {
-            if (tmp.size() > 4)
-            {
-                return false;
-            }
-            for (size_t i = 0; i < tmp.size(); i++)
-            {
-                if (tmp[i] < '0' || (tmp[i] > '9' && tmp[i] < 'A') ||
-                    (tmp[i] > 'F' && tmp[i] < 'a') || tmp[i] > 'f')
-                {
-                    return false;
-                }
-            }
-//
-            tmp = pa.getword();
-        }
-        return true;
-    }
-    for (size_t i = 0; i < str.size(); i++)
-        if (!isdigit(str[i]) && str[i] != '.')
-            return false;
-    return true;
+	Handler().AddList(m_socket, LIST_CONNECTING, false);
+	Handler().AddList(m_socket, LIST_RETRY, false);
+	Handler().AddList(m_socket, LIST_CLOSE, false);
+	m_socket = INVALID_SOCKET;
+DEB(	fprintf(stderr, " fd %d\n", m_socket);)
+	return n;
 }
 
 
-bool Socket::u2ip(const std::string& str, ipaddr_t& l)
+SOCKET Socket::CreateSocket(int af,int type, const std::string& protocol)
 {
-    if (m_ipv6)
-    {
-        Handler().LogError(this, "u2ip", 0, "converting to ipv4 on ipv6 socket", LOG_LEVEL_ERROR);
-        return false;
-    }
-    if (isip(str))
-    {
-        Parse pa((char *)str.c_str(), ".");
-        union
-        {
-            struct
-            {
-                unsigned char b1;
-                unsigned char b2;
-                unsigned char b3;
-                unsigned char b4;
-            } a;
-            ipaddr_t l;
-        } u;
-        u.a.b1 = static_cast<unsigned char>(pa.getvalue());
-        u.a.b2 = static_cast<unsigned char>(pa.getvalue());
-        u.a.b3 = static_cast<unsigned char>(pa.getvalue());
-        u.a.b4 = static_cast<unsigned char>(pa.getvalue());
-        l = u.l;
-        return true;
-    }
-    else
-    {
-        struct hostent *he = gethostbyname( str.c_str() );
-        if (!he)
-        {
-            Handler().LogError(this, "gethostbyname", Errno, StrError(Errno), LOG_LEVEL_WARNING);
-            return false;
-        }
-        memcpy(&l, he -> h_addr, 4);
-        return true;
-    }
-    return false;
+	struct protoent *p = NULL;
+	int optval;
+	SOCKET s;
+
+#ifdef ENABLE_POOL
+	m_socket_type = type;
+	m_socket_protocol = protocol;
+#endif
+	if (protocol.size())
+	{
+		p = getprotobyname( protocol.c_str() );
+		if (!p)
+		{
+			Handler().LogError(this, "getprotobyname", Errno, StrError(Errno), LOG_LEVEL_FATAL);
+			SetCloseAndDelete();
+			return INVALID_SOCKET;
+		}
+	}
+	int protno = p ? p -> p_proto : 0;
+
+	s = socket(af, type, protno);
+	if (s == INVALID_SOCKET)
+	{
+		Handler().LogError(this, "socket", Errno, StrError(Errno), LOG_LEVEL_FATAL);
+		SetCloseAndDelete();
+		return INVALID_SOCKET;
+	}
+	OnOptions(af, type, protno, s);
+#ifdef SO_NOSIGPIPE
+	{
+		optval = 1;
+		if (setsockopt(s, SOL_SOCKET, SO_NOSIGPIPE, (char *)&optval, sizeof(optval)) == -1)
+		{
+			Handler().LogError(this, "setsockopt(SOL_SOCKET, SO_NOSIGPIPE)", Errno, StrError(Errno), LOG_LEVEL_FATAL);
+			closesocket(s);
+			SetCloseAndDelete();
+			return INVALID_SOCKET;
+		}
+	}
+#endif
+	if (type == SOCK_STREAM)
+	{
+		optval = m_opt_reuse ? 1 : 0;
+		if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)&optval, sizeof(optval)) == -1)
+		{
+			Handler().LogError(this, "setsockopt(SOL_SOCKET, SO_REUSEADDR)", Errno, StrError(Errno), LOG_LEVEL_FATAL);
+			closesocket(s);
+			SetCloseAndDelete();
+			return INVALID_SOCKET;
+		}
+
+		optval = m_opt_keepalive ? 1 : 0;
+		if (setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (char *)&optval, sizeof(optval)) == -1)
+		{
+			Handler().LogError(this, "setsockopt(SOL_SOCKET, SO_KEEPALIVE)", Errno, StrError(Errno), LOG_LEVEL_FATAL);
+			closesocket(s);
+			SetCloseAndDelete();
+			return INVALID_SOCKET;
+		}
+	}
+	return s;
 }
 
-
-#ifdef IPPROTO_IPV6
-bool Socket::u2ip(const std::string& str, struct in6_addr& l)
-{
-    if (!m_ipv6)
-    {
-        Handler().LogError(this, "u2ip", 0, "converting to ipv6 on ipv4 socket", LOG_LEVEL_ERROR);
-        return false;
-    }
-    if (isip(str))
-    {
-        std::list<std::string> vec;
-        size_t x = 0;
-        char s[100];
-        for (size_t i = 0; i <= str.size(); i++)
-        {
-            if (i == str.size() || str[i] == ':')
-            {
-                strncpy(s, str.substr(x,i - x).c_str(), i - x);
-                s[i - x] = 0;
-//
-                if (strstr(s,"."))                // x.x.x.x
-                {
-                    Parse pa(s,".");
-                    char slask[100];
-                    unsigned long b0 = static_cast<unsigned long>(pa.getvalue());
-                    unsigned long b1 = static_cast<unsigned long>(pa.getvalue());
-                    unsigned long b2 = static_cast<unsigned long>(pa.getvalue());
-                    unsigned long b3 = static_cast<unsigned long>(pa.getvalue());
-                    sprintf(slask,"%lx",b0 * 256 + b1);
-                    vec.push_back(slask);
-                    sprintf(slask,"%lx",b2 * 256 + b3);
-                    vec.push_back(slask);
-                }
-                else
-                {
-                    vec.push_back(s);
-                }
-//
-                x = i + 1;
-            }
-        }
-        size_t sz = vec.size();                   // number of byte pairs
-        size_t i = 0;                             // index in in6_addr.in6_u.u6_addr16[] ( 0 .. 7 )
-        for (std::list<std::string>::iterator it = vec.begin(); it != vec.end(); it++)
-        {
-            std::string bytepair = *it;
-            if (bytepair.size())
-            {
-                l.s6_addr16[i++] = htons(Utility::hex2unsigned(bytepair));
-            }
-            else
-            {
-                l.s6_addr16[i++] = 0;
-                while (sz++ < 8)
-                {
-                    l.s6_addr16[i++] = 0;
-                }
-            }
-        }
-        return true;
-    }
-    else
-    {
-#ifdef SOLARIS
-        int errnum = 0;
-        struct hostent *he = getipnodebyname( str.c_str(), AF_INET6, 0, &errnum );
-#else
-        struct hostent *he = gethostbyname2( str.c_str(), AF_INET6 );
-#endif
-        if (!he)
-        {
-#ifdef SOLARIS
-            Handler().LogError(this, "getipnodebyname", errnum, "failed, see error code");
-#else
-            Handler().LogError(this, "gethostbyname2", Errno, StrError(Errno), LOG_LEVEL_WARNING);
-#endif
-            return false;
-        }
-        memcpy(&l,he -> h_addr_list[0],he -> h_length);
-#ifdef SOLARIS
-        free(he);
-#endif
-        return true;
-    }
-    return false;
-}
-#endif
-
-void Socket::l2ip(const ipaddr_t ip, std::string& str)
-{
-    if (m_ipv6)
-    {
-        Handler().LogError(this, "l2ip", 0, "converting to ipv4 on ipv6 socket", LOG_LEVEL_ERROR);
-        str = "";
-        return;
-    }
-    union
-    {
-        struct
-        {
-            unsigned char b1;
-            unsigned char b2;
-            unsigned char b3;
-            unsigned char b4;
-        } a;
-        ipaddr_t l;
-    } u;
-    u.l = ip;
-    char tmp[100];
-    sprintf(tmp, "%u.%u.%u.%u", u.a.b1, u.a.b2, u.a.b3, u.a.b4);
-    str = tmp;
-}
-
-
-#ifdef IPPROTO_IPV6
-void Socket::l2ip(const struct in6_addr& ip, std::string& str,bool mixed)
-{
-    if (!m_ipv6)
-    {
-        Handler().LogError(this, "l2ip", 0, "converting to ipv6 on ipv4 socket", LOG_LEVEL_ERROR);
-        str = "";
-        return;
-    }
-    char slask[100];
-    *slask = 0;
-    unsigned int prev = 0;
-    if (mixed)
-    {
-        unsigned int x;
-        for (size_t i = 0; i < 6; i++)
-        {
-            x = ntohs(ip.s6_addr16[i]);
-            if (*slask && (x || prev))
-                strcat(slask,":");
-            if (x)
-            {
-                sprintf(slask + strlen(slask),"%X", x);
-            }
-            prev = x;
-        }
-        x = ntohs(ip.s6_addr16[6]);
-        sprintf(slask + strlen(slask),":%u.%u",x / 256,x & 255);
-        x = ntohs(ip.s6_addr16[7]);
-        sprintf(slask + strlen(slask),".%u.%u",x / 256,x & 255);
-    }
-    else
-    {
-        for (size_t i = 0; i < 8; i++)
-        {
-            unsigned int x = ntohs(ip.s6_addr16[i]);
-            if (*slask && (x || prev))
-                strcat(slask,":");
-            if (x)
-            {
-                sprintf(slask + strlen(slask),"%X", x);
-            }
-            prev = x;
-        }
-    }
-    str = slask;
-}
-#endif
 
 void Socket::Attach(SOCKET s)
 {
-    m_socket = s;
+	m_socket = s;
 }
 
 
 SOCKET Socket::GetSocket()
 {
-    return m_socket;
+	return m_socket;
 }
 
 
 void Socket::SetDeleteByHandler(bool x)
 {
-    m_bDel = x;
+	m_bDel = x;
 }
 
 
 bool Socket::DeleteByHandler()
 {
-    return m_bDel;
+	return m_bDel;
 }
 
 
 void Socket::SetCloseAndDelete(bool x)
 {
-    m_bClose = x;
+	if (x != m_bClose)
+	{
+		Handler().AddList(m_socket, LIST_CLOSE, x);
+		m_bClose = x;
+		if (x)
+		{
+			m_tClose = time(NULL);
+		}
+	}
 }
 
 
 bool Socket::CloseAndDelete()
 {
-    return m_bClose;
+	return m_bClose;
 }
 
 
 void Socket::SetConnecting(bool x)
 {
-    m_bConnecting = x;
-    m_tConnect = time(NULL);
+	if (x != m_bConnecting)
+	{
+		Handler().AddList(m_socket, LIST_CONNECTING, x);
+		m_bConnecting = x;
+		if (x)
+		{
+			m_tConnect = time(NULL);
+		}
+	}
 }
 
 
 bool Socket::Connecting()
 {
-    return m_bConnecting;
+	return m_bConnecting;
 }
 
 
-void Socket::SetRemoteAddress(struct sockaddr* sa, socklen_t l)
+void Socket::SetRemoteAddress(SocketAddress& ad) //struct sockaddr* sa, socklen_t l)
 {
-    memcpy(&m_sa, sa, l);
-    m_sa_len = l;
+	m_remote_address = ad.GetCopy();
 }
 
 
-void Socket::GetRemoteSocketAddress(struct sockaddr& sa,socklen_t& sa_len)
+std::auto_ptr<SocketAddress> Socket::GetRemoteSocketAddress()
 {
-    memcpy(&sa, &m_sa, m_sa_len);
-    sa_len = m_sa_len;
+	return std::auto_ptr<SocketAddress>(m_remote_address -> GetCopy());
 }
 
 
-SocketHandler& Socket::Handler() const
+ISocketHandler& Socket::Handler() const
 {
-    return m_handler;
+#ifdef ENABLE_DETACH
+	if (IsDetached())
+		return *m_slave_handler;
+#endif
+	return m_handler;
+}
+
+
+ISocketHandler& Socket::MasterHandler() const
+{
+	return m_handler;
 }
 
 
 ipaddr_t Socket::GetRemoteIP4()
 {
-    ipaddr_t l = 0;
-    struct sockaddr_in* saptr = (struct sockaddr_in*)&m_sa;
-    if (m_ipv6)
-    {
-        Handler().LogError(this, "GetRemoteIP4", 0, "get ipv4 address for ipv6 socket", LOG_LEVEL_WARNING);
-    }
-    memcpy(&l, &saptr -> sin_addr, 4);
-    return l;
+	ipaddr_t l = 0;
+#ifdef ENABLE_IPV6
+	if (m_ipv6)
+	{
+		Handler().LogError(this, "GetRemoteIP4", 0, "get ipv4 address for ipv6 socket", LOG_LEVEL_WARNING);
+	}
+#endif
+	if (m_remote_address.get() != NULL)
+	{
+		struct sockaddr *p = *m_remote_address;
+		struct sockaddr_in *sa = (struct sockaddr_in *)p;
+		memcpy(&l, &sa -> sin_addr, sizeof(struct in_addr));
+	}
+	return l;
 }
 
 
+#ifdef ENABLE_IPV6
 #ifdef IPPROTO_IPV6
 struct in6_addr Socket::GetRemoteIP6()
 {
-    struct sockaddr_in6 *p = (struct sockaddr_in6 *)&m_sa;
-    if (!m_ipv6)
-    {
-        Handler().LogError(this, "GetRemoteIP6", 0, "get ipv6 address for ipv4 socket", LOG_LEVEL_WARNING);
-    }
-    return p -> sin6_addr;
+	if (!m_ipv6)
+	{
+		Handler().LogError(this, "GetRemoteIP6", 0, "get ipv6 address for ipv4 socket", LOG_LEVEL_WARNING);
+	}
+	struct sockaddr_in6 fail;
+	if (m_remote_address.get() != NULL)
+	{
+		struct sockaddr *p = *m_remote_address;
+		memcpy(&fail, p, sizeof(struct sockaddr_in6));
+	}
+	else
+	{
+		memset(&fail, 0, sizeof(struct sockaddr_in6));
+	}
+	return fail.sin6_addr;
 }
 #endif
+#endif
+
 
 port_t Socket::GetRemotePort()
 {
-#ifdef IPPROTO_IPV6
-    if (m_ipv6)
-    {
-        struct sockaddr_in6 *p = (struct sockaddr_in6 *)&m_sa;
-        return ntohs(p -> sin6_port);
-    }
-#endif
-    struct sockaddr_in* saptr = (struct sockaddr_in*)&m_sa;
-    return ntohs(saptr -> sin_port);
+	if (!m_remote_address.get())
+	{
+		return 0;
+	}
+	return m_remote_address -> GetPort();
 }
 
 
 std::string Socket::GetRemoteAddress()
 {
-    std::string str;
-#ifdef IPPROTO_IPV6
-    if (m_ipv6)
-    {
-        l2ip(GetRemoteIP6(), str);
-        return str;
-    }
-#endif
-    l2ip(GetRemoteIP4(), str);
-    return str;
+	if (!m_remote_address.get())
+	{
+		return "";
+	}
+	return m_remote_address -> Convert(false);
 }
 
 
 std::string Socket::GetRemoteHostname()
 {
-    std::string str;
-#ifdef IPPROTO_IPV6
-    if (m_ipv6)
-    {
-        Handler().LogError(this, "GetRemoteHostname", 0, "not implemented for ipv6", LOG_LEVEL_WARNING);
-        return GetRemoteAddress();
-    }
-#endif
-    long l = GetRemoteIP4();
-//#ifdef LINUX
-//	struct hostent *he = gethostbyaddr(&l, sizeof(long), AF_INET);
-//#else // _WIN32, MACOSX and SOLARIS
-    struct hostent *he = gethostbyaddr( (char *)&l, sizeof(long), AF_INET);
-//#endif
-    if (!he)
-    {
-        return GetRemoteAddress();
-    }
-    str = he -> h_name;
-    return str;
+	if (!m_remote_address.get())
+	{
+		return "";
+	}
+	return m_remote_address -> Reverse();
 }
 
 
 bool Socket::SetNonblocking(bool bNb)
 {
 #ifdef _WIN32
-    unsigned long l = bNb ? 1 : 0;
-    int n = ioctlsocket(m_socket, FIONBIO, &l);
-    if (n != 0)
-    {
-        Handler().LogError(this, "ioctlsocket(FIONBIO)", Errno, "");
-        return false;
-    }
-    return true;
+	unsigned long l = bNb ? 1 : 0;
+	int n = ioctlsocket(m_socket, FIONBIO, &l);
+	if (n != 0)
+	{
+		Handler().LogError(this, "ioctlsocket(FIONBIO)", Errno, "");
+		return false;
+	}
+	return true;
 #else
-    if (bNb)
-    {
-        if (fcntl(m_socket, F_SETFL, O_NONBLOCK) == -1)
-        {
-            Handler().LogError(this, "fcntl(F_SETFL, O_NONBLOCK)", Errno, StrError(Errno), LOG_LEVEL_ERROR);
-            return false;
-        }
-    }
-    else
-    {
-        if (fcntl(m_socket, F_SETFL, 0) == -1)
-        {
-            Handler().LogError(this, "fcntl(F_SETFL, 0)", Errno, StrError(Errno), LOG_LEVEL_ERROR);
-            return false;
-        }
-    }
-    return true;
+	if (bNb)
+	{
+		if (fcntl(m_socket, F_SETFL, O_NONBLOCK) == -1)
+		{
+			Handler().LogError(this, "fcntl(F_SETFL, O_NONBLOCK)", Errno, StrError(Errno), LOG_LEVEL_ERROR);
+			return false;
+		}
+	}
+	else
+	{
+		if (fcntl(m_socket, F_SETFL, 0) == -1)
+		{
+			Handler().LogError(this, "fcntl(F_SETFL, 0)", Errno, StrError(Errno), LOG_LEVEL_ERROR);
+			return false;
+		}
+	}
+	return true;
 #endif
 }
 
@@ -740,73 +551,53 @@ bool Socket::SetNonblocking(bool bNb)
 bool Socket::SetNonblocking(bool bNb, SOCKET s)
 {
 #ifdef _WIN32
-    unsigned long l = bNb ? 1 : 0;
-    int n = ioctlsocket(s, FIONBIO, &l);
-    if (n != 0)
-    {
-        Handler().LogError(this, "ioctlsocket(FIONBIO)", Errno, "");
-        return false;
-    }
-    return true;
+	unsigned long l = bNb ? 1 : 0;
+	int n = ioctlsocket(s, FIONBIO, &l);
+	if (n != 0)
+	{
+		Handler().LogError(this, "ioctlsocket(FIONBIO)", Errno, "");
+		return false;
+	}
+	return true;
 #else
-    if (bNb)
-    {
-        if (fcntl(s, F_SETFL, O_NONBLOCK) == -1)
-        {
-            Handler().LogError(this, "fcntl(F_SETFL, O_NONBLOCK)", Errno, StrError(Errno), LOG_LEVEL_ERROR);
-            return false;
-        }
-    }
-    else
-    {
-        if (fcntl(s, F_SETFL, 0) == -1)
-        {
-            Handler().LogError(this, "fcntl(F_SETFL, 0)", Errno, StrError(Errno), LOG_LEVEL_ERROR);
-            return false;
-        }
-    }
-    return true;
+	if (bNb)
+	{
+		if (fcntl(s, F_SETFL, O_NONBLOCK) == -1)
+		{
+			Handler().LogError(this, "fcntl(F_SETFL, O_NONBLOCK)", Errno, StrError(Errno), LOG_LEVEL_ERROR);
+			return false;
+		}
+	}
+	else
+	{
+		if (fcntl(s, F_SETFL, 0) == -1)
+		{
+			Handler().LogError(this, "fcntl(F_SETFL, 0)", Errno, StrError(Errno), LOG_LEVEL_ERROR);
+			return false;
+		}
+	}
+	return true;
 #endif
 }
 
 
 void Socket::Set(bool bRead, bool bWrite, bool bException)
 {
-    m_handler.Set(m_socket, bRead, bWrite, bException);
+	Handler().Set(m_socket, bRead, bWrite, bException);
 }
 
 
 time_t Socket::GetConnectTime()
 {
-    return time(NULL) - m_tConnect;
+	return time(NULL) - m_tConnect;
 }
 
 
 bool Socket::Ready()
 {
-    if (m_socket != INVALID_SOCKET && !Connecting() && !CloseAndDelete())
-        return true;
-    return false;
-}
-
-
-bool Socket::Detach()
-{
-    if (!DeleteByHandler())
-        return false;
-    if (m_pThread)
-        return false;
-    if (m_detached)
-        return false;
-    m_detach = true;
-    return true;
-}
-
-
-void Socket::DetachSocket()
-{
-    m_pThread = new SocketThread(*this);
-    m_pThread -> SetRelease(true);
+	if (m_socket != INVALID_SOCKET && !Connecting() && !CloseAndDelete())
+		return true;
+	return false;
 }
 
 
@@ -815,43 +606,15 @@ void Socket::OnLine(const std::string& )
 }
 
 
-void Socket::OnSSLInitDone()
-{
-}
-
-
-bool Socket::SSLCheckConnect()
-{
-    return false;
-}
-
-
-void Socket::SetSSLConnecting(bool x)
-{
-    m_ssl_connecting = x;
-}
-
-
-bool Socket::SSLConnecting()
-{
-    return m_ssl_connecting;
-}
-
-
 void Socket::SetLineProtocol(bool x)
 {
-    m_line_protocol = x;
+	m_line_protocol = x;
 }
 
 
 bool Socket::LineProtocol()
 {
-    return m_line_protocol;
-}
-
-
-void Socket::ReadLine()
-{
+	return m_line_protocol;
 }
 
 
@@ -867,87 +630,625 @@ Socket::Socket(const Socket& s) : m_handler(s.Handler())
 
 Socket *Socket::GetParent()
 {
-    return m_parent;
+	return m_parent;
 }
 
 
 void Socket::SetParent(Socket *x)
 {
-    m_parent = x;
+	m_parent = x;
 }
 
 
 port_t Socket::GetPort()
 {
-    Handler().LogError(this, "GetPort", 0, "GetPort only implemented for ListenSocket", LOG_LEVEL_WARNING);
-    return 0;
+	Handler().LogError(this, "GetPort", 0, "GetPort only implemented for ListenSocket", LOG_LEVEL_WARNING);
+	return 0;
 }
 
 
+Socket *Socket::Create()
+{
+	return NULL;
+}
+
+
+bool Socket::OnConnectRetry()
+{
+	return true;
+}
+
+
+#ifdef ENABLE_RECONNECT
+void Socket::OnReconnect()
+{
+}
+#endif
+
+
+time_t Socket::Uptime()
+{
+	return time(NULL) - m_tCreate;
+}
+
+
+#ifdef ENABLE_IPV6
+void Socket::SetIpv6(bool x)
+{
+	m_ipv6 = x;
+}
+
+
+bool Socket::IsIpv6()
+{
+	return m_ipv6;
+}
+#endif
+
+
+void Socket::SetCallOnConnect(bool x)
+{
+	Handler().AddList(m_socket, LIST_CALLONCONNECT, x);
+	m_call_on_connect = x;
+}
+
+
+bool Socket::CallOnConnect()
+{
+	return m_call_on_connect;
+}
+
+
+void Socket::SetReuse(bool x)
+{
+	m_opt_reuse = x;
+}
+
+
+void Socket::SetKeepalive(bool x)
+{
+	m_opt_keepalive = x;
+}
+
+
+void Socket::SetConnectTimeout(int x)
+{
+	m_connect_timeout = x;
+}
+
+
+int Socket::GetConnectTimeout()
+{
+	return m_connect_timeout;
+}
+
+
+void Socket::DisableRead(bool x)
+{
+	m_b_disable_read = x;
+}
+
+
+bool Socket::IsDisableRead()
+{
+	return m_b_disable_read;
+}
+
+
+void Socket::SetRetryClientConnect(bool x)
+{
+	Handler().AddList(m_socket, LIST_RETRY, x);
+	m_b_retry_connect = x;
+}
+
+
+bool Socket::RetryClientConnect()
+{
+	return m_b_retry_connect;
+}
+
+
+void Socket::SendBuf(const char *,size_t,int)
+{
+}
+
+
+void Socket::Send(const std::string&,int)
+{
+}
+
+
+void Socket::SetConnected(bool x)
+{
+	m_connected = x;
+}
+
+
+bool Socket::IsConnected()
+{
+	return m_connected;
+}
+
+
+void Socket::SetFlushBeforeClose(bool x)
+{
+	m_flush_before_close = x;
+}
+
+
+bool Socket::GetFlushBeforeClose()
+{
+	return m_flush_before_close;
+}
+
+
+int Socket::GetConnectionRetry()
+{
+	return m_connection_retry;
+}
+
+
+void Socket::SetConnectionRetry(int x)
+{
+	m_connection_retry = x;
+}
+
+
+int Socket::GetConnectionRetries()
+{
+	return m_retries;
+}
+
+
+void Socket::IncreaseConnectionRetries()
+{
+	m_retries++;
+}
+
+
+void Socket::ResetConnectionRetries()
+{
+	m_retries = 0;
+}
+
+
+#ifdef ENABLE_RECONNECT
+void Socket::OnDisconnect()
+{
+}
+#endif
+
+
+void Socket::SetErasedByHandler(bool x)
+{
+	m_b_erased_by_handler = x;
+}
+
+
+bool Socket::ErasedByHandler()
+{
+	return m_b_erased_by_handler;
+}
+
+
+time_t Socket::TimeSinceClose()
+{
+	return time(NULL) - m_tClose;
+}
+
+
+void Socket::SetShutdown(int x)
+{
+	m_shutdown = x;
+}
+
+
+int Socket::GetShutdown()
+{
+	return m_shutdown;
+}
+
+
+void Socket::SetClientRemoteAddress(SocketAddress& ad)
+{
+	if (!ad.IsValid())
+	{
+		Handler().LogError(this, "SetClientRemoteAddress", 0, "remote address not valid", LOG_LEVEL_ERROR);
+	}
+	m_client_remote_address = ad.GetCopy();
+}
+
+
+std::auto_ptr<SocketAddress> Socket::GetClientRemoteAddress()
+{
+	if (!m_client_remote_address.get())
+	{
+		Handler().LogError(this, "GetClientRemoteAddress", 0, "remote address not yet set", LOG_LEVEL_ERROR);
+	}
+	return std::auto_ptr<SocketAddress>(m_client_remote_address -> GetCopy());
+}
+
+
+uint64_t Socket::GetBytesSent(bool)
+{
+	return 0;
+}
+
+
+uint64_t Socket::GetBytesReceived(bool)
+{
+	return 0;
+}
+
+
+unsigned long int Socket::Random()
+{
+	return m_prng.next();
+}
+
+
+#ifdef HAVE_OPENSSL
+void Socket::OnSSLConnect()
+{
+}
+
+
+void Socket::OnSSLAccept()
+{
+}
+
+
+bool Socket::SSLNegotiate()
+{
+	return false;
+}
+
+
+bool Socket::IsSSL()
+{
+	return m_b_enable_ssl;
+}
+
+
+void Socket::EnableSSL(bool x)
+{
+	m_b_enable_ssl = x;
+}
+
+
+bool Socket::IsSSLNegotiate()
+{
+	return m_b_ssl;
+}
+
+
+void Socket::SetSSLNegotiate(bool x)
+{
+	m_b_ssl = x;
+}
+
+
+bool Socket::IsSSLServer()
+{
+	return m_b_ssl_server;
+}
+
+
+void Socket::SetSSLServer(bool x)
+{
+	m_b_ssl_server = x;
+}
+
+
+void Socket::OnSSLConnectFailed()
+{
+}
+
+
+void Socket::OnSSLAcceptFailed()
+{
+}
+#endif // HAVE_OPENSSL
+
+
+#ifdef ENABLE_POOL
 void Socket::CopyConnection(Socket *sock)
 {
-    Attach( sock -> GetSocket() );
-    SetSocketType( sock -> GetSocketType() );
-    SetSocketProtocol( sock -> GetSocketProtocol() );
-    SetClientRemoteAddr( sock -> GetClientRemoteAddr() );
-    SetClientRemotePort( sock -> GetClientRemotePort() );
+	Attach( sock -> GetSocket() );
+#ifdef ENABLE_IPV6
+	SetIpv6( sock -> IsIpv6() );
+#endif
+	SetSocketType( sock -> GetSocketType() );
+	SetSocketProtocol( sock -> GetSocketProtocol() );
 
-    struct sockaddr sa;
-    socklen_t sa_len;
-    sock -> GetRemoteSocketAddress(sa, sa_len);
-    SetRemoteAddress(&sa, sa_len);
+	SetClientRemoteAddress( *sock -> GetClientRemoteAddress() );
+	SetRemoteAddress( *sock -> GetRemoteSocketAddress() );
 }
 
 
-void Socket::OnOptions(int family,int type,int protocol,SOCKET s)
+void Socket::SetIsClient()
 {
-/*
-    Handler().LogError(this, "OnOptions", family, "Address Family", LOG_LEVEL_INFO);
-    Handler().LogError(this, "OnOptions", type, "Type", LOG_LEVEL_INFO);
-    Handler().LogError(this, "OnOptions", protocol, "Protocol", LOG_LEVEL_INFO);
-*/
-    SetReuse(true);
-    SetKeepalive(true);
+	m_bClient = true;
 }
 
 
-int Socket::Resolve(const std::string& host,port_t port)
+void Socket::SetSocketType(int x)
 {
-    return Handler().Resolve(this, host, port);
+	m_socket_type = x;
 }
 
 
+int Socket::GetSocketType()
+{
+	return m_socket_type;
+}
+
+
+void Socket::SetSocketProtocol(const std::string& x)
+{
+	m_socket_protocol = x;
+}
+
+
+const std::string& Socket::GetSocketProtocol()
+{
+	return m_socket_protocol;
+}
+
+
+void Socket::SetRetain()
+{
+	if (m_bClient) m_bRetain = true;
+}
+
+
+bool Socket::Retain()
+{
+	return m_bRetain;
+}
+
+
+void Socket::SetLost()
+{
+	m_bLost = true;
+}
+
+
+bool Socket::Lost()
+{
+	return m_bLost;
+}
+#endif // ENABLE_POOL
+
+
+#ifdef ENABLE_SOCKS4
 void Socket::OnSocks4Connect()
 {
-    Handler().LogError(this, "OnSocks4Connect", 0, "Use with TcpSocket only");
+	Handler().LogError(this, "OnSocks4Connect", 0, "Use with TcpSocket only");
 }
 
 
 void Socket::OnSocks4ConnectFailed()
 {
-    Handler().LogError(this, "OnSocks4ConnectFailed", 0, "Use with TcpSocket only");
+	Handler().LogError(this, "OnSocks4ConnectFailed", 0, "Use with TcpSocket only");
 }
 
 
 bool Socket::OnSocks4Read()
 {
-    Handler().LogError(this, "OnSocks4Read", 0, "Use with TcpSocket only");
-    return true;
+	Handler().LogError(this, "OnSocks4Read", 0, "Use with TcpSocket only");
+	return true;
 }
 
 
 void Socket::SetSocks4Host(const std::string& host)
 {
-    u2ip(host, m_socks4_host);
+	Utility::u2ip(host, m_socks4_host);
 }
 
 
-/*
-void Socket::OnWriteComplete()
+bool Socket::Socks4()
+{
+	return m_bSocks4;
+}
+
+
+void Socket::SetSocks4(bool x)
+{
+	m_bSocks4 = x;
+}
+
+
+void Socket::SetSocks4Host(ipaddr_t a)
+{
+	m_socks4_host = a;
+}
+
+
+void Socket::SetSocks4Port(port_t p)
+{
+	m_socks4_port = p;
+}
+
+
+void Socket::SetSocks4Userid(const std::string& x)
+{
+	m_socks4_userid = x;
+}
+
+
+ipaddr_t Socket::GetSocks4Host()
+{
+	return m_socks4_host;
+}
+
+
+port_t Socket::GetSocks4Port()
+{
+	return m_socks4_port;
+}
+
+
+const std::string& Socket::GetSocks4Userid()
+{
+	return m_socks4_userid;
+}
+#endif // ENABLE_SOCKS4
+
+
+#ifdef ENABLE_DETACH
+bool Socket::Detach()
+{
+	if (!DeleteByHandler())
+		return false;
+	if (m_pThread)
+		return false;
+	if (m_detached)
+		return false;
+	SetDetach();
+	return true;
+}
+
+
+void Socket::DetachSocket()
+{
+	SetDetached();
+	m_pThread = new SocketThread(this);
+	m_pThread -> SetRelease(true);
+}
+
+
+void Socket::OnDetached()
 {
 }
-*/
 
-void Socket::Resolved(int,ipaddr_t,port_t)
+
+void Socket::SetDetach(bool x)
+{
+	Handler().AddList(m_socket, LIST_DETACH, x);
+	m_detach = x;
+}
+
+
+bool Socket::IsDetach()
+{
+	return m_detach;
+}
+
+
+void Socket::SetDetached(bool x)
+{
+	m_detached = x;
+}
+
+
+const bool Socket::IsDetached() const
+{
+	return m_detached;
+}
+
+
+void Socket::SetSlaveHandler(ISocketHandler *p)
+{
+	m_slave_handler = p;
+}
+
+
+Socket::SocketThread::SocketThread(Socket *p)
+:Thread(false)
+,m_socket(p)
+{
+	// Creator will release
+}
+
+
+Socket::SocketThread::~SocketThread()
+{
+	if (IsRunning())
+	{
+		SetRelease(true);
+		SetRunning(false);
+#ifdef _WIN32
+		Sleep(1000);
+#else
+		sleep(1);
+#endif
+	}
+}
+
+
+void Socket::SocketThread::Run()
+{
+	SocketHandler h;
+	h.SetSlave();
+	h.Add(m_socket);
+	m_socket -> SetSlaveHandler(&h);
+	m_socket -> OnDetached();
+	while (h.GetCount() && IsRunning())
+	{
+		h.Select(0, 500000);
+	}
+	// m_socket now deleted oops
+	// yeah oops m_socket delete its socket thread, that means this
+	// so Socket will no longer delete its socket thread, instead we do this:
+	SetDeleteOnExit();
+}
+#endif // ENABLE_DETACH
+
+
+#ifdef ENABLE_RESOLVER
+int Socket::Resolve(const std::string& host,port_t port)
+{
+	return Handler().Resolve(this, host, port);
+}
+
+
+#ifdef ENABLE_IPV6
+int Socket::Resolve6(const std::string& host,port_t port)
+{
+	return Handler().Resolve6(this, host, port);
+}
+#endif
+
+
+int Socket::Resolve(ipaddr_t a)
+{
+	return Handler().Resolve(this, a);
+}
+
+
+#ifdef ENABLE_IPV6
+int Socket::Resolve(in6_addr& a)
+{
+	return Handler().Resolve(this, a);
+}
+#endif
+
+
+void Socket::OnResolved(int,ipaddr_t,port_t)
 {
 }
+
+
+#ifdef ENABLE_IPV6
+void Socket::OnResolved(int,in6_addr&,port_t)
+{
+}
+#endif
+
+
+void Socket::OnReverseResolved(int,const std::string&)
+{
+}
+
+
+void Socket::OnResolveFailed(int)
+{
+}
+#endif // ENABLE_RESOLVER
+
+
+#ifdef SOCKETS_NAMESPACE
+}
+#endif
+
