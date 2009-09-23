@@ -2298,18 +2298,18 @@ void Spell::EffectEnchantHeldItem(uint32 i)
             return;
 
         // remove old enchanting before applying new
-        if(uint32 old_enchant_id = item->GetUInt32Value(ITEM_FIELD_ENCHANTMENT+pEnchant->display_type*3))
-            item_owner->AddItemEnchant(item,old_enchant_id,pEnchant->display_type,false);
+        if(uint32 old_enchant_id = item->GetUInt32Value(ITEM_FIELD_ENCHANTMENT+pEnchant->display_type[0]*3))
+            item_owner->AddItemEnchant(item,old_enchant_id,pEnchant->display_type[0],false);
 
         for(int x=0;x<3;x++)
-            item->SetUInt32Value(ITEM_FIELD_ENCHANTMENT+pEnchant->display_type*3+x,0);
+            item->SetUInt32Value(ITEM_FIELD_ENCHANTMENT+pEnchant->display_type[0]*3+x,0);
 
-        item->SetUInt32Value(ITEM_FIELD_ENCHANTMENT+pEnchant->display_type*3, enchant_id);
-        item->SetUInt32Value(ITEM_FIELD_ENCHANTMENT+pEnchant->display_type*3+1, duration*1000);
+        item->SetUInt32Value(ITEM_FIELD_ENCHANTMENT+pEnchant->display_type[0]*3, enchant_id);
+        item->SetUInt32Value(ITEM_FIELD_ENCHANTMENT+pEnchant->display_type[0]*3+1, duration*1000);
         item->SetState(ITEM_CHANGED);
 
         // add new enchanting
-        item_owner->AddItemEnchant(item,enchant_id,pEnchant->display_type,true);
+        item_owner->AddItemEnchant(item,enchant_id,pEnchant->display_type[0],true);
 
         // set duration
         item_owner->AddEnchantDuration(item,1,duration*1000);

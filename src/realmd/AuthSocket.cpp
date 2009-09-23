@@ -64,7 +64,7 @@ enum eStatus
 #pragma pack(push,1)
 #endif
 
-typedef struct
+typedef struct AUTH_LOGON_CHALLENGE_C
 {
     uint8   cmd;
     uint8   error;
@@ -100,7 +100,7 @@ typedef struct
 } sAuthLogonChallenge_S;
 */
 
-typedef struct
+typedef struct AUTH_LOGON_PROOF_C
 {
     uint8   cmd;
     uint8   A[32];
@@ -118,7 +118,7 @@ typedef struct
     uint16  unk4[20];
 }  sAuthLogonProofKey_C;
 */
-typedef struct
+typedef struct AUTH_LOGON_PROOF_S
 {
     uint8   cmd;
     uint8   error;
@@ -126,7 +126,7 @@ typedef struct
     uint32  unk2;
 } sAuthLogonProof_S;
 
-typedef struct
+typedef struct XFER_INIT
 {
     uint8 cmd;                                              //XFER_INITIATE
     uint8 size;                                             //strlen("Patch");
@@ -135,14 +135,14 @@ typedef struct
     uint8 md5[MD5_DIGEST_LENGTH];
 }XFER_INIT;
 
-typedef struct
+typedef struct XFER_DATA
 {
     uint8 opcode;
     uint16 data_size;
     uint8 data[ChunkSize];
 }XFER_DATA_STRUCT;
 
-typedef struct
+typedef struct AuthHandler
 {
     eAuthCmd cmd;
     uint32 status;
@@ -167,7 +167,7 @@ class PatcherRunnable: public ZThread::Runnable
         AuthSocket * mySocket;
 };
 
-typedef struct
+typedef struct PATCH_INFO
 {
     uint8 md5[MD5_DIGEST_LENGTH];
 }PATCH_INFO;
@@ -399,36 +399,28 @@ bool AuthSocket::_HandleLogonChallenge()
                     }
                     else
                     {
-                        ///- If the user is already logged in, reject the logon attempt
-                        //if((*result)[4].GetUInt8() == 1)
-                        //{
-                        //    pkt << (uint8)REALM_AUTH_ACCOUNT_IN_USE;
-                        //}
-                        //else
-                        {
-                            ///- Get the password from the account table, upper it, and make the SRP6 calculation
-                            std::string password = (*result)[0].GetCppString();
-                            _SetVSFields(password);
+                        ///- Get the password from the account table, upper it, and make the SRP6 calculation
+                        std::string password = (*result)[0].GetCppString();
+                        _SetVSFields(password);
 
-                            b.SetRand(19 * 8);
-                            BigNumber gmod=g.ModExp(b, N);
-                            B = ((v * 3) + gmod) % N;
-                            ASSERT(gmod.GetNumBytes() <= 32);
+                        b.SetRand(19 * 8);
+                        BigNumber gmod=g.ModExp(b, N);
+                        B = ((v * 3) + gmod) % N;
+                        ASSERT(gmod.GetNumBytes() <= 32);
 
-                            BigNumber unk3;
-                            unk3.SetRand(16*8);
+                        BigNumber unk3;
+                        unk3.SetRand(16*8);
 
-                            ///- Fill the response packet with the result
-                            pkt << (uint8)REALM_AUTH_SUCCESS;
-                            pkt.append(B.AsByteArray(), 32);
-                            pkt << (uint8)1;
-                            pkt.append(g.AsByteArray(), 1);
-                            pkt << (uint8)32;
-                            pkt.append(N.AsByteArray(), 32);
-                            pkt.append(s.AsByteArray(), s.GetNumBytes());
-                            pkt.append(unk3.AsByteArray(), 16);
-                            pkt << (uint8)0;                // Added in 1.12.x client branch
-                        }
+                        ///- Fill the response packet with the result
+                        pkt << (uint8)REALM_AUTH_SUCCESS;
+                        pkt.append(B.AsByteArray(), 32);
+                        pkt << (uint8)1;
+                        pkt.append(g.AsByteArray(), 1);
+                        pkt << (uint8)32;
+                        pkt.append(N.AsByteArray(), 32);
+                        pkt.append(s.AsByteArray(), s.GetNumBytes());
+                        pkt.append(unk3.AsByteArray(), 16);
+                        pkt << (uint8)0;                // Added in 1.12.x client branch
                     }
                 }
                 delete result;
@@ -634,8 +626,8 @@ bool AuthSocket::_HandleRealmList()
     RealmList::RealmMap::const_iterator i;
     for( i = m_realmList.begin(); i != m_realmList.end(); i++ )
     {
-        pkt << (uint32) i->second->icon;
-        pkt << (uint8) i->second->color;
+        pkt << uint32(i->second->icon);                     // realm type
+        pkt << uint8(i->second->color);                     // if 2, then realm is offline
         pkt << i->first;
         pkt << i->second->address;
         /// \todo Fix realm population
@@ -666,7 +658,7 @@ bool AuthSocket::_HandleRealmList()
 
     SendBuf((char *)hdr.contents(), hdr.size());
 
-    // Set check field before possable reloagin to realm
+    // Set check field before possable relogin to realm
     _SetVSFields(password);
     return true;
 }

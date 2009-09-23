@@ -206,7 +206,6 @@ void WorldSocket::OnDelete()
 /// Handle the client authentication packet
 void WorldSocket::_HandleAuthSession(WorldPacket& recvPacket)
 {
-
     uint8 digest[20];
     uint32 clientSeed;
     uint32 unk2;
@@ -295,7 +294,7 @@ void WorldSocket::_HandleAuthSession(WorldPacket& recvPacket)
         }
     }
 
-    ///- Re-check account ban (ame check as in realmd).
+    ///- Re-check account ban (same check as in realmd).
     if((*result)[8].GetUInt8() == 1)                        // if account banned
     {
         packet.Initialize( SMSG_AUTH_RESPONSE, 1 );
@@ -318,8 +317,8 @@ void WorldSocket::_HandleAuthSession(WorldPacket& recvPacket)
     if (sWorld.GetPlayerLimit() > 0 && num >= sWorld.GetPlayerLimit() && security == 0)
     {
         /// \todo Handle the waiting queue when the server is full
-        SendAuthWaitQue(0);
-        sLog.outDetail( "SOCKET: Sent Auth Response (server full)." );
+        SendAuthWaitQue(1);
+        sLog.outDetail( "SOCKET: Sent Auth Response (server queue)." );
         return;
     }
 
@@ -345,7 +344,6 @@ void WorldSocket::_HandleAuthSession(WorldPacket& recvPacket)
 
     if (memcmp(sha.GetDigest(), digest, 20))
     {
-
         packet.Initialize( SMSG_AUTH_RESPONSE, 1 );
         packet << uint8( AUTH_FAILED );
 
@@ -360,15 +358,11 @@ void WorldSocket::_HandleAuthSession(WorldPacket& recvPacket)
     _crypt.Init();
 
     ///- Send 'Auth is ok'
-    packet.Initialize( SMSG_AUTH_RESPONSE, 1 );
+    packet.Initialize( SMSG_AUTH_RESPONSE, 1+4+1+4 );
     packet << uint8( AUTH_OK );
-    //packet << uint8( 0xB0 ); - redundent
-    //packet << uint8( 0x09 );
-    //packet << uint8( 0x02 );
-    //packet << uint8( 0x00 );
-    //packet << uint8( 0x02 );
-    //packet << uint32( 0x0 );
-
+    packet << (uint32)0; // unknown random value...
+    packet << (uint8)2;
+    packet << (uint32)0;
     SendPacket(&packet);
 
     ///- Create a new WorldSession for the player and add it to the World

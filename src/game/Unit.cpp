@@ -2959,9 +2959,9 @@ void Unit::AddItemEnchant(Item *item,uint32 enchant_id,uint8 enchant_slot,bool a
     SpellItemEnchantmentEntry const *pEnchant = sSpellItemEnchantmentStore.LookupEntry(enchant_id);
     if(!pEnchant)
         return;
-    uint32 enchant_display = pEnchant->display_type;
-    uint32 enchant_value1 = pEnchant->value1;
-    uint32 enchant_spell_id = pEnchant->spellid;
+    uint32 enchant_display = pEnchant->display_type[0];
+    uint32 enchant_value1 = pEnchant->amount[0];
+    uint32 enchant_spell_id = pEnchant->spellid[0];
 
     SpellEntry const *enchantSpell_info = sSpellStore.LookupEntry(enchant_spell_id);
 

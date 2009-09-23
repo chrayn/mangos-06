@@ -31,13 +31,14 @@ enum AreaTeams
     AREATEAM_ALLY  = 2,
     AREATEAM_HORDE = 4
 };
+
 struct AreaTableEntry
 {
     uint32    ID;
     uint32    mapid;
-    uint32    zone;
+    uint32    zone;                                         // if 0 then it's zone, else it's zone id of this area
     uint32    exploreFlag;
-    uint32    zone_type;                                    // unknown value but 312 for all cities
+    uint32    flags;                                        // unknown value but 312 for all cities
     int32     area_level;
     uint32    team;
 };
@@ -59,6 +60,8 @@ struct ChrRacesEntry
 {
     uint32      RaceID;
     uint32      FactionID;                                  //facton template id
+    uint32      model_m;
+    uint32      model_f;
     uint32      TeamID;                                     // 7-Alliance 1-Horde
     uint32      startingTaxiMask;
     uint32      startmovie;
@@ -171,6 +174,7 @@ struct MapEntry
     uint32      MapID;
     char*       name;
     uint32      map_type;
+    uint32      map_flag;
 };
 
 struct SkillLineEntry
@@ -195,15 +199,16 @@ struct SkillLineAbilityEntry
 
 struct SpellEntry
 {
-    uint32    Id;
-    uint32    School;
-    uint32    Category;
-    uint32    Dispel;                                       //4
-    uint32    Mechanic;                                     //5
-    uint32    Attributes;                                   //6
-    uint32    AttributesEx;                                 //7
-    uint32    AttributesEx2;                                //8
-    uint32    AttributesExEx;                               //9
+    uint32    Id;                                           //1
+    uint32    School;                                       //2
+    uint32    Category;                                     //3
+                                                            //4 not used
+    uint32    Dispel;                                       //5
+    uint32    Mechanic;                                     //6
+    uint32    Attributes;                                   //7
+    uint32    AttributesEx;                                 //8
+    uint32    AttributesEx2;                                //9
+    uint32    AttributesExEx;                               //10
     uint32    Stances;
     uint32    Targets;
     uint32    TargetCreatureType;
@@ -329,13 +334,13 @@ struct SpellDurationEntry
 struct SpellItemEnchantmentEntry
 {
     uint32      ID;
-    uint32      display_type;
-    uint32      value1;
+    uint32      display_type[3];
+    uint32      amount[3];
     uint32      value2;
-    uint32      spellid;
+    uint32      spellid[3];
     char*       description;
-    uint32      aura_id;
-    uint32      slot;
+    //uint32      aura_id; - posible incorrect pos in past
+    //uint32      slot;    - posible incorrect pos in past
 };
 
 struct StableSlotPricesEntry

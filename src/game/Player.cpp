@@ -4557,7 +4557,7 @@ void Player::UpdateZone(uint32 newZone)
             pvpInfo.endTimer = time(NULL);                  // start toggle-off
     }
 
-    if(zone->zone_type == 312)                              // in city
+    if(zone->flags == 312)                                  // in city
     {
         SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_RESTING);
         SetRestType(2);
@@ -5008,9 +5008,9 @@ void Player::CastItemCombatSpell(Item *item,Unit* Target)
         uint32 enchant_id = item->GetUInt32Value(ITEM_FIELD_ENCHANTMENT+e_slot*3);
         SpellItemEnchantmentEntry const *pEnchant = sSpellItemEnchantmentStore.LookupEntry(enchant_id);
         if(!pEnchant) continue;
-        uint32 enchant_display = pEnchant->display_type;
-        float chance = pEnchant->value1 != 0 ? float(pEnchant->value1) : GetWeaponProcChance();
-        uint32 enchant_spell_id = pEnchant->spellid;
+        uint32 enchant_display = pEnchant->display_type[0];
+        float chance = pEnchant->amount[0] != 0 ? float(pEnchant->amount[0]) : GetWeaponProcChance();
+        uint32 enchant_spell_id = pEnchant->spellid[0];
         SpellEntry const *enchantSpell_info = sSpellStore.LookupEntry(enchant_spell_id);
         if(!enchantSpell_info) continue;
         if(enchant_display!=4 && enchant_display!=2 && IsItemSpellToCombat(enchantSpell_info))
@@ -7797,10 +7797,10 @@ void Player::DestroyItem( uint8 bag, uint8 slot, bool update )
                         SpellItemEnchantmentEntry const *pEnchant = sSpellItemEnchantmentStore.LookupEntry(Enchant_id);
                         if(!pEnchant)
                             continue;
-                        uint32 enchant_display = pEnchant->display_type;
-                        uint32 enchant_value1 = pEnchant->value1;
+                        uint32 enchant_display = pEnchant->display_type[0];
+                        uint32 enchant_value1 = pEnchant->amount[0];
                         //uint32 enchant_value2 = pEnchant->value2;
-                        uint32 enchant_spell_id = pEnchant->spellid;
+                        uint32 enchant_spell_id = pEnchant->spellid[0];
                         //uint32 enchant_aura_id = pEnchant->aura_id;
                         //uint32 enchant_description = pEnchant->description;
                         //SpellEntry *enchantSpell_info = sSpellStore.LookupEntry(enchant_spell_id);

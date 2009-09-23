@@ -502,6 +502,7 @@ bool IsPositiveEffect(uint32 spellId, uint32 effIndex)
             case 26 /*SPELL_AURA_MOD_ROOT          */:
             case 27 /*SPELL_AURA_MOD_SILENCE       */:
             case 33 /*SPELL_AURA_MOD_DECREASE_SPEED*/:
+            case 95 /*SPELL_AURA_GHOST*/:
                 return false;
             case 42 /*SPELL_AURA_PROC_TRIGGER_SPELL*/:
                 if(spellId != spellproto->EffectTriggerSpell[effIndex])

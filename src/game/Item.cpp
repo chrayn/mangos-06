@@ -813,9 +813,9 @@ float Item::GetEnchantMod(uint32 enchant_id, ItemPrototype const * itemProto)
         weapon_subclass = -1;
     int32 inv_type = itemProto->InventoryType;
     float tempmod, mod = 0;
-    uint32 en_display = entry->display_type;
-    uint32 en_value1 = entry->value1;
-    uint32 en_spellid = entry->spellid;
+    uint32 en_display = entry->display_type[0];
+    uint32 en_value1 = entry->amount[0];
+    uint32 en_spellid = entry->spellid[0];
     if(en_display == 4)
     {
         mod += pow((float)(en_value1 * ITEM_STAT_ARMOR_MOD), 1.50f);
