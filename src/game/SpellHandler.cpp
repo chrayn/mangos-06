@@ -72,7 +72,7 @@ void WorldSession::HandleUseItemOpcode(WorldPacket& recvPacket)
 
         uint8 trade_goods = proto->Class == ITEM_CLASS_TRADE_GOODS && proto->SubClass != ITEM_SUBCLASS_EXPLOSIVES;
         if (consumable || trade_goods ||
-            proto->Class == ITEM_CLASS_KEY || proto->Class == ITEM_CLASS_JUNK)
+            proto->Class == ITEM_CLASS_KEY || proto->Class == ITEM_CLASS_MISC)
         {
             pUser->SendEquipError(EQUIP_ERR_CANT_DO_IN_COMBAT,pItem,NULL);
             return;
@@ -383,7 +383,7 @@ void WorldSession::HandleGameObjectUseOpcode( WorldPacket & recv_data )
             spellTarget = targetPlayer;
 
             // prepare data for final summoning (before current spell finish to prevent access to deleted GO)
-            //info = obj->GetGOInfo();
+            info = obj->GetGOInfo();
             spellId = info->sound1;
 
             // finish spell

@@ -280,11 +280,12 @@ enum PlayerFlags
     PLAYER_FLAGS_GM             = 0x00000008,
     PLAYER_FLAGS_GHOST          = 0x00000010,
     PLAYER_FLAGS_RESTING        = 0x00000020,
+    PLAYER_FLAGS_FFA_PVP        = 0x00000080,
     PLAYER_FLAGS_IN_PVP         = 0x00000200,
     PLAYER_FLAGS_HIDE_HELM      = 0x00000400,
     PLAYER_FLAGS_HIDE_CLOAK     = 0x00000800,
-    PLAYER_FLAGS_UNK            = 0x00001000,               //played long time
-    PLAYER_FLAGS_UNK2           = 0x00002000,               //played too long time
+    PLAYER_FLAGS_UNK1           = 0x00001000,                   //played long time
+    PLAYER_FLAGS_UNK2           = 0x00002000,                   //played too long time
 };
 
 enum LootType
@@ -475,13 +476,13 @@ enum MovementFlags
     MOVEMENTFLAG_RIGHT          = 0x20,
     MOVEMENTFLAG_PITCH_UP       = 0x40,
     MOVEMENTFLAG_PITCH_DOWN     = 0x80,
-
     MOVEMENTFLAG_WALK           = 0x100,
     MOVEMENTFLAG_JUMPING        = 0x2000,
     MOVEMENTFLAG_FALLING        = 0x4000,
     MOVEMENTFLAG_SWIMMING       = 0x200000,
     MOVEMENTFLAG_ONTRANSPORT    = 0x2000000,
-    MOVEMENTFLAG_SPLINE         = 0x4000000
+    MOVEMENTFLAG_SPLINE         = 0x4000000,
+    MOVEMENTFLAG_WATERWALKING   = 0x10000000,
 };
 
 typedef HM_NAMESPACE::hash_map< uint32, std::pair < uint32, uint32 > > BoundInstancesMap;
@@ -1120,7 +1121,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool IsItemSpellToCombat(SpellEntry const *spellInfo);
 
         void SendInitWorldStates(uint32 MapID);
-        void SendUpdateWordState(uint16 Field, uint16 Value);
+        void SendUpdateWorldState(uint16 Field, uint16 Value);
         void SendDirectMessage(WorldPacket *data);
 
         PlayerMenu* PlayerTalkClass;

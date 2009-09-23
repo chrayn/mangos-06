@@ -771,8 +771,8 @@ NameTableEntry g_worldOpcodeNames[] =
     {  CMSG_AREA_SPIRIT_HEALER_QUERY,                       "CMSG_AREA_SPIRIT_HEALER_QUERY"},
     {  CMSG_AREA_SPIRIT_HEALER_QUEUE,                       "CMSG_AREA_SPIRIT_HEALER_QUEUE"},
     {  SMSG_AREA_SPIRIT_HEALER_TIME,                        "SMSG_AREA_SPIRIT_HEALER_TIME"},
-    {  CMSG_GM_UNTEACH,                                     "CMSG_GM_UNTEACH"},
-    {  SMSG_HARDWARE_SURVEY_REQUEST,                        "SMSG_HARDWARE_SURVEY_REQUEST"},
+    //{  CMSG_GM_UNTEACH,                                     "CMSG_GM_UNTEACH"},
+    //{  SMSG_HARDWARE_SURVEY_REQUEST,                        "SMSG_HARDWARE_SURVEY_REQUEST"},
     {  CMSG_HARDWARE_SURVEY_RESULTS,                        "CMSG_HARDWARE_SURVEY_RESULTS"},
     {  SMSG_WARDEN_DATA,                                    "SMSG_WARDEN_DATA"},
     {  CMSG_WARDEN_DATA,                                    "CMSG_WARDEN_DATA"},
@@ -795,7 +795,6 @@ NameTableEntry g_worldOpcodeNames[] =
     {  CMSG_MINIGAME_MOVE,                                  "CMSG_MINIGAME_MOVE"},
     {  SMSG_MINIGAME_MOVE_FAILED,                           "SMSG_MINIGAME_MOVE_FAILED"},
     {  CMSG_GUILD_CHANGEINFO,                               "CMSG_GUILD_CHANGEINFO"},
-    {  SMSG_UNKNOWN_INFO,                                   "SMSG_UNKNOWN_INFO"},
     {                                                       // unofficial - first appeared in 1.12
         SMSG_OUTDOORPVP_NOTIFY,                              "SMSG_OUTDOORPVP_NOTIFY"
     },

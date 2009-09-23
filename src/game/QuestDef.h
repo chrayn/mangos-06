@@ -37,8 +37,9 @@ class ObjectMgr;
 #define QUEST_REWARDS_COUNT 4
 #define QUEST_DEPLINK_COUNT 10
 #define QUEST_REPUTATIONS_COUNT 5
+#define QUEST_EMOTE_COUNT 4
 
-enum
+enum QuestFailedReasons
 {
     INVALIDREASON_DONT_HAVE_REQ        = 0,
     INVALIDREASON_DONT_HAVE_REQLEVEL   = 1,
@@ -49,7 +50,7 @@ enum
     INVALIDREASON_DONT_HAVE_REQ_MONEY  = 21+1,              //1.12.1
 };
 
-enum
+enum QuestShareMessages
 {
     QUEST_PARTY_MSG_SHARING_QUEST   = 0,
     QUEST_PARTY_MSG_CANT_TAKE_QUEST = 1,

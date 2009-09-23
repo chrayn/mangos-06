@@ -93,7 +93,7 @@ enum OpCodes
     SMSG_NEW_WORLD                                  = 62,
     SMSG_TRANSFER_PENDING                           = 63,
     SMSG_TRANSFER_ABORTED                           = 64,
-    SMSG_CHARACTER_LOGIN_FAILED                     = 65,
+    SMSG_CHARACTER_LOGIN_FAILED                     = 65, // kick client to character select screen and show "World server is down".
     SMSG_LOGIN_SETTIMESPEED                         = 66,
     SMSG_GAMETIME_UPDATE                            = 67,
     CMSG_GAMETIME_SET                               = 68,
@@ -401,16 +401,16 @@ enum OpCodes
     SMSG_PUREMOUNT_CANCELLED_OBSOLETE               = 368,
     CMSG_MOUNTSPECIAL_ANIM                          = 369,
     SMSG_MOUNTSPECIAL_ANIM                          = 370,
-    SMSG_PET_TAME_FAILURE                           = 371,
+    SMSG_PET_TAME_FAILURE                           = 371, // Creature not found.
     CMSG_PET_SET_ACTION                             = 372,
     CMSG_PET_ACTION                                 = 373,
     CMSG_PET_ABANDON                                = 374,
     CMSG_PET_RENAME                                 = 375,
-    SMSG_PET_NAME_INVALID                           = 376,
+    SMSG_PET_NAME_INVALID                           = 376, // Error, invalid name entered.
     SMSG_PET_SPELLS                                 = 377,
 
     //CMSG_PET_CAST_SPELL_OBSOLETE                    = 378, //OBSOLETE
-    SMSG_PET_MODE                                   = 378,
+    SMSG_PET_MODE                                   = 378, // uint64 pet_guid + uint32 flags?
     CMSG_GOSSIP_HELLO                               = 379,
     CMSG_GOSSIP_SELECT_OPTION                       = 380,
     SMSG_GOSSIP_MESSAGE                             = 381,
@@ -470,7 +470,7 @@ enum OpCodes
     SMSG_TRAINER_BUY_SUCCEEDED                      = 435,
     SMSG_TRAINER_BUY_FAILED                         = 436,
     CMSG_BINDER_ACTIVATE                            = 437,
-    SMSG_PLAYERBINDERROR                            = 438,
+    SMSG_PLAYERBINDERROR                            = 438, // You already bound there.
     CMSG_BANKER_ACTIVATE                            = 439,
     SMSG_SHOW_BANK                                  = 440,
     CMSG_BUY_BANK_SLOT                              = 441,
@@ -511,7 +511,7 @@ enum OpCodes
     CMSG_PING                                       = 476,
     SMSG_PONG                                       = 477,
     SMSG_CLEAR_COOLDOWN                             = 478,
-    SMSG_GAMEOBJECT_PAGETEXT                        = 479,
+    SMSG_GAMEOBJECT_PAGETEXT                        = 479, // uint64 guid
     CMSG_SETSHEATHED                                = 480,
     SMSG_COOLDOWN_CHEAT                             = 481,
     SMSG_SPELL_DELAYED                              = 482,
@@ -521,10 +521,10 @@ enum OpCodes
     CMSG_GM_INVIS                                   = 486,
 
     //CMSG_SCREENSHOT                                = 487, //OBSOLETE
-    SMSG_INVALID_PROMOTION_CODE                     = 487,
+    SMSG_INVALID_PROMOTION_CODE                     = 487, // Couldn't validate code, please try again.
     MSG_GM_BIND_OTHER                               = 488,
     MSG_GM_SUMMON                                   = 489,
-    SMSG_ITEM_TIME_UPDATE                           = 490,
+    SMSG_ITEM_TIME_UPDATE                           = 490, // uint64 guid + uint32 time
     SMSG_ITEM_ENCHANT_TIME_UPDATE                   = 491,
     SMSG_AUTH_CHALLENGE                             = 492,
     CMSG_AUTH_SESSION                               = 493,
@@ -686,7 +686,7 @@ enum OpCodes
     CMSG_AUTOBANK_ITEM                              = 643,
     MSG_QUERY_NEXT_MAIL_TIME                        = 644,
     SMSG_RECEIVED_MAIL                              = 645,
-    SMSG_RAID_GROUP_ONLY                            = 646,
+    SMSG_RAID_GROUP_ONLY                            = 646, // You are not in this instance group. You will be teleported to %s in %u Minites. uint32 time(milliseconds)+uint32 unk
     CMSG_SET_DURABILITY_CHEAT                       = 647,
     CMSG_SET_PVP_RANK_CHEAT                         = 648,
     CMSG_ADD_PVP_MEDAL_CHEAT                        = 649,
@@ -703,9 +703,9 @@ enum OpCodes
     CMSG_MEETINGSTONE_CHEAT                         = 660,
     SMSG_MEETINGSTONE_SETQUEUE                      = 661,
     CMSG_MEETINGSTONE_INFO                          = 662,
-    SMSG_MEETINGSTONE_COMPLETE                      = 663,
-    SMSG_MEETINGSTONE_IN_PROGRESS                   = 664,
-    SMSG_MEETINGSTONE_MEMBER_ADDED                  = 665,
+    SMSG_MEETINGSTONE_COMPLETE                      = 663, // Your group is complete, you have left the LFG matchmaking system.
+    SMSG_MEETINGSTONE_IN_PROGRESS                   = 664, // You still seeking more members through LFG matchmaking system., empty?
+    SMSG_MEETINGSTONE_MEMBER_ADDED                  = 665, // %s has been added to the group by the LFG matchmaking system.
     CMSG_GMTICKETSYSTEM_TOGGLE                      = 666,
     CMSG_CANCEL_GROWTH_AURA                         = 667,
     SMSG_CANCEL_AUTO_REPEAT                         = 668,
@@ -719,11 +719,11 @@ enum OpCodes
     SMSG_LOOT_MASTER_LIST                           = 676,
     SMSG_SET_FORCED_REACTIONS                       = 677,
     SMSG_SPELL_FAILED_OTHER                         = 678,
-    SMSG_GAMEOBJECT_RESET_STATE                     = 679,
+    SMSG_GAMEOBJECT_RESET_STATE                     = 679, // uint64 guid
     CMSG_REPAIR_ITEM                                = 680,
     SMSG_CHAT_PLAYER_NOT_FOUND                      = 681,
     MSG_TALENT_WIPE_CONFIRM                         = 682,
-    SMSG_SUMMON_REQUEST                             = 683,
+    SMSG_SUMMON_REQUEST                             = 683, // uint64 guid + uint32 area/zoneid + uint32 time(milliseconds?)
     CMSG_SUMMON_RESPONSE                            = 684,
     MSG_MOVE_TOGGLE_GRAVITY_CHEAT                   = 685,
     SMSG_MONSTER_MOVE_TRANSPORT                     = 686,
@@ -742,7 +742,7 @@ enum OpCodes
 
     //SMSG_SPELL_REFLECTED                            = 699, //OBSOLETE
     SMSG_MEETINGSTONE_JOINFAILED                    = 699,
-    SMSG_PLAYER_SKINNED                             = 700,
+    SMSG_PLAYER_SKINNED                             = 700, // uint8 0x00
     SMSG_DURABILITY_DAMAGE_DEATH                    = 701,
     CMSG_SET_EXPLORATION                            = 702,
     CMSG_SET_ACTIONBAR_TOGGLES                      = 703,
@@ -752,7 +752,7 @@ enum OpCodes
     SMSG_UPDATE_WORLD_STATE                         = 707,
     CMSG_ITEM_NAME_QUERY                            = 708,
     SMSG_ITEM_NAME_QUERY_RESPONSE                   = 709,
-    SMSG_PET_ACTION_FEEDBACK                        = 710,
+    SMSG_PET_ACTION_FEEDBACK                        = 710, // uint8 0x04, 0x01
     CMSG_CHAR_RENAME                                = 711,
     SMSG_CHAR_RENAME                                = 712,
     CMSG_MOVE_SPLINE_DONE                           = 713,
@@ -781,52 +781,109 @@ enum OpCodes
     MSG_PVP_LOG_DATA                                = 736,
     CMSG_LEAVE_BATTLEFIELD                          = 737,
     CMSG_AREA_SPIRIT_HEALER_QUERY                   = 738,
-    CMSG_AREA_SPIRIT_HEALER_QUEUE                   = 739,
-    SMSG_AREA_SPIRIT_HEALER_TIME                    = 740,
-    CMSG_GM_UNTEACH                                 = 739,
-    SMSG_HARDWARE_SURVEY_REQUEST                    = 740,
+    CMSG_AREA_SPIRIT_HEALER_QUEUE                   = 739, // WTF?
+    SMSG_AREA_SPIRIT_HEALER_TIME                    = 740, // WTF?, uint64 guid+uint32 time?
+    //CMSG_GM_UNTEACH                                 = 739, // WTF?
+    //SMSG_HARDWARE_SURVEY_REQUEST                    = 740, // WTF?
     CMSG_HARDWARE_SURVEY_RESULTS                    = 741,
     SMSG_WARDEN_DATA                                = 742,
     CMSG_WARDEN_DATA                                = 743,
-    SMSG_GROUP_JOINED_BATTLEGROUND                  = 744,
+    SMSG_GROUP_JOINED_BATTLEGROUND                  = 744, // uint32 0xfffffffc, probably different error messages...
     MSG_BATTLEGROUND_PLAYER_POSITIONS               = 745,
-
-                                                            //strange!!
-    //MSG_BINDPOINT_CONFIRM = SMSG_BINDER_CONFIRM,
-
-    //TODO Check double check if the -2 is correct
     CMSG_PET_STOP_ATTACK                            = 746,
     SMSG_BINDER_CONFIRM                             = 747,
     SMSG_BATTLEGROUND_PLAYER_JOINED                 = 748,
     SMSG_BATTLEGROUND_PLAYER_LEFT                   = 749,
     CMSG_BATTLEMASTER_JOIN                          = 750,
 
-    SMSG_ADDON_INFO                                 = 753-2,
-    CMSG_PET_UNLEARN                                = 754-2,
-    SMSG_PET_UNLEARN_CONFIRM                        = 755-2,
-    SMSG_PARTY_MEMBER_STATS_FULL                    = 756-2,
-    CMSG_PET_SPELL_AUTOCAST                         = 757-2,
-    SMSG_WEATHER                                    = 758-2,
-    SMSG_PLAY_TIME_WARNING                          = 759-2,
-    SMSG_MINIGAME_SETUP                             = 760-2,
-    SMSG_MINIGAME_STATE                             = 761-2,
-    CMSG_MINIGAME_MOVE                              = 762-2,
-    SMSG_MINIGAME_MOVE_FAILED                       = 763-2,
+    SMSG_ADDON_INFO                                 = 751,
+    CMSG_PET_UNLEARN                                = 752,
+    SMSG_PET_UNLEARN_CONFIRM                        = 753,
+    SMSG_PARTY_MEMBER_STATS_FULL                    = 754,
+    CMSG_PET_SPELL_AUTOCAST                         = 755,
+    SMSG_WEATHER                                    = 756,
+    SMSG_PLAY_TIME_WARNING                          = 757,
+    SMSG_MINIGAME_SETUP                             = 758,
+    SMSG_MINIGAME_STATE                             = 759,
+    CMSG_MINIGAME_MOVE                              = 760,
+    SMSG_MINIGAME_MOVE_FAILED                       = 761,
+    // 762
+    SMSG_COMPRESSED_MOVE                            = 763,
     CMSG_GUILD_CHANGEINFO                           = 764,
-    SMSG_UNKNOWN_INFO                               = 766,
-
+    SMSG_UNKNOWN_765                                = 765, // Trial accounts can not send unlimited tells, you must wait before you can send tells to more players.
+    SMSG_SET_MOVE_SPEED                             = 766, // GUID + float speed, move speed, except swim/turn/fly
+    SMSG_SET_RUN_BACK_SPEED                         = 767, // GUID + float speed, run back speed
+    SMSG_SET_SWIM_SPEED                             = 768, // GUID + float speed, swim and swim back speed
+    // 769
+    SMSG_SET_SWIM_BACK_SPEED                        = 770, // swim back speed
+    SMSG_SET_TURN_RATE                              = 771, // turn rate (note: client crashes if fly mode enabled, and turn rate = 0)
+    SMSG_UNKNOWN_772                                = 772, // packed GUID
+    SMSG_UNKNOWN_773                                = 773, // set movement flag 0x20000000
+    SMSG_UNKNOWN_774                                = 774, // stop effect of 773 opcode
+    SMSG_UNKNOWN_775                                = 775, // movement related, looks like hover, movement flag 0x40000000, we can't jump if we are lands
+    SMSG_UNKNOWN_776                                = 776, // stop effect of 775 opcode
+    SMSG_MOVE_SET_WATERWALK                         = 777, // packed GUID, set movement flag 0x10000000, waterwalking...
+    SMSG_MOVE_STOP_WATERWALK                        = 778, // packed GUID, stop effect of 777 opcode
+    SMSG_UNKNOWN_779                                = 779, // packed guid, change animation to swim/fly like
+    SMSG_UNKNOWN_780                                = 780, // packed guid
+    SMSG_MOVE_STOP_WALK                             = 781, // packed guid, remove 0x100 movement flag (walk)
+    SMSG_MOVE_START_WALK                            = 782, // set 0x100 movement flag (walk)
+    // 783
+    // 784
+    // 785
     CMSG_ACTIVATETAXI_FAR                           = 786,
-    //griphon related = 786
-
+    // 787 causes client crash
+    // 788
+    // 789
+    // 790
     CMSG_FIELD_WATCHED_FACTION_INACTIVE             = 791,
     CMSG_FIELD_WATCHED_FACTION_SHOW_BAR             = 792,
-
-    MSG_RAID_ICON_TARGET                            = 801,
-    MSG_RAID_READY_CHECK                            = 802,
-
-    // unofficial opcodes:
-    SMSG_COMPRESSED_MOVE                            = 0x2FB,// 763
-    SMSG_OUTDOORPVP_NOTIFY                          = 0x33B,// 827
+    //SMSG_UNKNOWN_793                                = 793, // packed guid + uint32
+    //SMSG_UNKNOWN_794                                = 794, // packed guid, movement related, set 0x1000 movement flag, all speed to 0, except turn rate
+    // 795
+    //SMSG_UNKNOWN_796                                = 796, // uint64, guid?
+    //CMSG_RESET_INSTANCES                            = 797, // reset instances, empty
+    //SMSG_RESET_INSTANCES_RESULT                     = 798, // chat message: %u (number) has been reset.
+    // 799
+    //SMSG_UNKNOWN_800                                = 800, // uint32 mapid, instance related
+    MSG_RAID_ICON_TARGET                            = 801, // uint8+uint8+uint64 guid
+    MSG_RAID_READY_CHECK                            = 802, // uint64+uint8
+    // 803
+    //SMSG_AI_UNKNOWN                                 = 804, // GUID + uint32, looks like SMSG_AI_REACTION
+    //SMSG_UNKNOWN_805                                = 805, // uint32 unk + x, y, z
+    // 806
+    // 807
+    //SMSG_UNKNOWN_808                                = 808, // uint32, probably gm ticket related
+    //MSG_SET_DUNGEON_DIFFICULTY                      = 809, // uint32+uint32+uint32
+    // 810
+    //SMSG_UNKNOWN_811                                = 811, // uint32, 0x0, SMSG_INSTANCE_RESET_ACTIVATE ?
+    // 812
+    // 813
+    // 814
+    //SMSG_UNKNOWN_815                                = 815, // spell related, uint64 guid + spellid
+    //SMSG_UNKNOWN_816                                = 816, // spell related, uint64 guid + spellid + uint32 unk + uint64 guid (target?)
+    // 817
+    //SMSG_UNKNOWN_818                                = 818, // 2.0.8, received before server MOTD, strange regexp sequence, looks like anti spam filter for chat messages...
+    // 819
+    // 820
+    // 821
+    // 822
+    // 823
+    // 824
+    // 825
+    SMSG_OUTDOORPVP_NOTIFY                          = 826, // looks like chat packets
+    SMSG_OUTDOORPVP_NOTIFY2                         = 827, // may be it's changed to 826?
+    // 828
+    SMSG_MOTD                                       = 829, // server MOTD message, uint32 + message
+    // 830
+    // 831
+    // 832
+    //SMSG_UNKNOWN_833                                = 833, // teleport
+    //SMSG_UNKNOWN_834                                = 834, // teleport
+    //SMSG_FLY_MODE_START                             = 835, // packed guid + uint32, start fly
+    //SMSG_FLY_MODE_STOP                              = 836, // packed guid + uint32, stop fly
+    //CMSG_MOVE_FLY_MODE_CHANGE_ACK                   = 837, // movement related, fly on/off ack
+    //CMSG_MOVE_FLY_STATE_CHANGE                      = 838, // movement related, fly start/stop(land) ack, may be MSG
 };
 
 /// Results of friend related commands
@@ -861,10 +918,10 @@ enum NPCFlags
     UNIT_NPC_FLAG_TAXIVENDOR        = 8,
     UNIT_NPC_FLAG_TRAINER           = 16,
     UNIT_NPC_FLAG_SPIRITHEALER      = 32,
-    UNIT_NPC_FLAG_GUARD             = 64,                   //UQ1: ???  We can use as guard flag?
+    UNIT_NPC_FLAG_GUARD             = 64,                   //UQ1: ???  We can use as guard flag?, used by blizz for BattleGround spirit guides... (entry 13116 and 13117)
     UNIT_NPC_FLAG_INNKEEPER         = 128,
     UNIT_NPC_FLAG_BANKER            = 256,
-    UNIT_NPC_FLAG_PETITIONER        = 512,
+    UNIT_NPC_FLAG_PETITIONER        = 512,                  // 1024+512 = guild petitions, 512 = arena team petitions
     UNIT_NPC_FLAG_TABARDVENDOR      = 1024,
     UNIT_NPC_FLAG_BATTLEFIELDPERSON = 2048,
     UNIT_NPC_FLAG_AUCTIONEER        = 4096,

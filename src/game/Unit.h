@@ -53,22 +53,25 @@
 
 enum ShapeshiftForm
 {
-    FORM_CAT              = 1,
-    FORM_TREE             = 2,
-    FORM_TRAVEL           = 3,
-    FORM_AQUA             = 4,
-    FORM_BEAR             = 5,
-    FORM_AMBIENT          = 6,
-    FORM_GHOUL            = 7,
-    FORM_DIREBEAR         = 8,
-    FORM_CREATUREBEAR     = 14,
-    FORM_GHOSTWOLF        = 16,
-    FORM_BATTLESTANCE     = 17,
-    FORM_DEFENSIVESTANCE  = 18,
-    FORM_BERSERKERSTANCE  = 19,
-    FORM_SHADOW           = 28,
-    FORM_STEALTH          = 30,
-    FORM_MOONKIN          = 31
+    FORM_CAT                = 1,
+    FORM_TREE               = 2,
+    FORM_TRAVEL             = 3,
+    FORM_AQUA               = 4,
+    FORM_BEAR               = 5,
+    FORM_AMBIENT            = 6,
+    FORM_GHOUL              = 7,
+    FORM_DIREBEAR           = 8,
+    FORM_CREATUREBEAR       = 14,
+    FORM_CREATURECAT        = 15,
+    FORM_GHOSTWOLF          = 16,
+    FORM_BATTLESTANCE       = 17,
+    FORM_DEFENSIVESTANCE    = 18,
+    FORM_BERSERKERSTANCE    = 19,
+    FORM_SHADOW             = 28,
+    //FORM_FLIGHT             = 29,
+    FORM_STEALTH            = 30,
+    FORM_MOONKIN            = 31,
+    FORM_SPIRITOFREDEMPTION = 32
 };
 
 #define CREATURE_MAX_SPELLS     4
@@ -178,7 +181,7 @@ enum UnitState
     UNIT_STAT_SEARCHING     = 64,
     UNIT_STAT_FLEEING       = 128,
     UNIT_STAT_MOVING        = (UNIT_STAT_ROAMING | UNIT_STAT_CHASE | UNIT_STAT_SEARCHING | UNIT_STAT_FLEEING),
-    UNIT_STAT_IN_FLIGHT     = 256,                          // player is i n flight mode
+    UNIT_STAT_IN_FLIGHT     = 256,                          // player is in flight mode
     UNIT_STAT_FOLLOW        = 512,
     UNIT_STAT_ROOT          = 1024,
     UNIT_STAT_CONFUSED      = 2048,
@@ -237,13 +240,23 @@ enum UnitFlags
     UNIT_FLAG_NONE           = 0x00000000,
     UNIT_FLAG_DISABLE_MOVE   = 0x00000004,
     UNIT_FLAG_UNKNOWN1       = 0x00000008,                  // essential for all units..
-    UNIT_FLAG_RENAME         = 0x00000010,                  // rename creature
+    UNIT_FLAG_RENAME         = 0x00000010,                  // rename creature, not working in 2.0.8
     UNIT_FLAG_RESTING        = 0x00000020,
+    UNIT_FLAG_UNKNOWN2       = 0x00000100,                  // 2.0.8
+    UNIT_FLAG_UNKNOWN3       = 0x00000800,                  // in combat ?2.0.8
     UNIT_FLAG_PVP            = 0x00001000,
     UNIT_FLAG_MOUNT          = 0x00002000,
-    UNIT_FLAG_DISABLE_ROTATE = 0x00040000,
+    UNIT_FLAG_UNKNOWN4       = 0x00004000,                  // 2.0.8
+    UNIT_FLAG_PACIFIED       = 0x00020000,
+    UNIT_FLAG_DISABLE_ROTATE = 0x00040000,                  // may be it's stunned flag?
     UNIT_FLAG_IN_COMBAT      = 0x00080000,
+    UNIT_FLAG_DISARMED       = 0x00200000,                  // disable melee spells casting..., "Required melee weapon" added to melee spells tooltip.
+    UNIT_FLAG_CONFUSED       = 0x00400000,
+    UNIT_FLAG_FLEEING        = 0x00800000,
+    UNIT_FLAG_UNKNOWN5       = 0x01000000,					// used in spell Eyes of the Beast for pet...
+    UNIT_FLAG_NOT_SELECTABLE = 0x02000000,
     UNIT_FLAG_SKINNABLE      = 0x04000000,
+    UNIT_FLAG_UNKNOWN6       = 0x20000000,                  // used in Feing Death spell
     UNIT_FLAG_SHEATHE        = 0x40000000
 };
 
@@ -541,10 +554,10 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         uint32 getClassMask() const { return 1 << (getClass()-1); };
         uint8 getGender() const { return (uint8)((GetUInt32Value(UNIT_FIELD_BYTES_0) >> 16) & 0xFF); };
 
-        float GetStat(Stats stat) const { return GetFloatValue(UNIT_FIELD_STR+stat); }
-        void SetStat(Stats stat, float val) { SetFloatValue(UNIT_FIELD_STR+stat, val); }
-        void ApplyStatMod(Stats stat, float val, bool apply) { ApplyModFloatValue(UNIT_FIELD_STR+stat, val, apply); }
-        void ApplyStatPercentMod(Stats stat, float val, bool apply) { ApplyPercentModFloatValue(UNIT_FIELD_STR+stat, val, apply); }
+        float GetStat(Stats stat) const { return GetFloatValue(UNIT_FIELD_STAT0+stat); }
+        void SetStat(Stats stat, float val) { SetFloatValue(UNIT_FIELD_STAT0+stat, val); }
+        void ApplyStatMod(Stats stat, float val, bool apply) { ApplyModFloatValue(UNIT_FIELD_STAT0+stat, val, apply); }
+        void ApplyStatPercentMod(Stats stat, float val, bool apply) { ApplyPercentModFloatValue(UNIT_FIELD_STAT0+stat, val, apply); }
 
         float GetArmor() const { return GetResistance(SPELL_SCHOOL_NORMAL) ; }
         void SetArmor(float val) { SetResistance(SPELL_SCHOOL_NORMAL, val); }
