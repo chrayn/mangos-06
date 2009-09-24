@@ -37,6 +37,7 @@ GameObject::GameObject( WorldObject *instantiator ) : WorldObject( instantiator 
 {
     m_objectType |= TYPE_GAMEOBJECT;
     m_objectTypeId = TYPEID_GAMEOBJECT;
+    m_updateFlag = (UPDATEFLAG_ALL | UPDATEFLAG_HASPOSITION);
 
     m_valuesCount = GAMEOBJECT_END;
     m_respawnTime = 0;
@@ -310,7 +311,6 @@ void GameObject::AddUse(Player* player)
 
 void GameObject::Delete()
 {
-
     SendObjectDeSpawnAnim(GetGUID());
 
     SetUInt32Value(GAMEOBJECT_STATE, 1);

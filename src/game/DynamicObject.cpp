@@ -37,6 +37,7 @@ DynamicObject::DynamicObject( WorldObject *instantiator ) : WorldObject( instant
 {
     m_objectType |= TYPE_DYNAMICOBJECT;
     m_objectTypeId = TYPEID_DYNAMICOBJECT;
+    m_updateFlag = (UPDATEFLAG_ALL | UPDATEFLAG_HASPOSITION);
 
     m_valuesCount = DYNAMICOBJECT_END;
 }

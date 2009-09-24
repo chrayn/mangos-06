@@ -32,6 +32,7 @@
 #include "ObjectAccessor.h"
 #include "Log.h"
 #include "Transports.h"
+#include "Chat.h"
 
 using namespace std;
 
@@ -46,11 +47,13 @@ Object::Object( )
 
     m_inWorld           = false;
     m_objectUpdated     = false;
+
+    m_PackGUID.clear();
+    _SetPackGUID(&m_PackGUID,0);
 }
 
 Object::~Object( )
 {
-
     if(m_objectUpdated)
         ObjectAccessor::Instance().RemoveUpdateObject(this);
 
@@ -103,38 +106,14 @@ void Object::BuildCreateUpdateBlockForPlayer(UpdateData *data, Player *target) c
         return;
 
     uint8  updatetype = UPDATETYPE_CREATE_OBJECT;
-    uint8  flags      = 0;
+    uint8  flags      = m_updateFlag;
     uint32 flags2     = 0;
 
-    switch(m_objectTypeId)
-    {
-        case TYPEID_ITEM:
-        case TYPEID_CONTAINER:
-            flags = UPDATEFLAG_ALL;
-            break;
-        case TYPEID_UNIT:
-        case TYPEID_PLAYER:
-            flags = UPDATEFLAG_ALL | UPDATEFLAG_LIVING | UPDATEFLAG_HASPOSITION;
-            break;
-        case TYPEID_CORPSE:
-        case TYPEID_GAMEOBJECT:
-        case TYPEID_DYNAMICOBJECT:
-            flags = UPDATEFLAG_ALL | UPDATEFLAG_HASPOSITION;
-            break;
-    }
-    
     /** lower flag1 **/
     if(target == this)                                      // building packet for oneself
     {
         updatetype = UPDATETYPE_CREATE_OBJECT2;
         flags |= UPDATEFLAG_SELF;
-    }
-
-
-    if(flags & UPDATEFLAG_HASPOSITION)
-    {
-        if ((GUID_HIPART(GetGUID())==HIGHGUID_PLAYER_CORPSE) || (GUID_HIPART(GetGUID()) == HIGHGUID_TRANSPORT))
-            flags |= UPDATEFLAG_TRANSPORT;
     }
 
     // flags2 only used at LIVING objects
@@ -155,23 +134,21 @@ void Object::BuildCreateUpdateBlockForPlayer(UpdateData *data, Player *target) c
     sLog.outDebug("BuildCreateUpdate: update-type: %u, object-type: %u got flags: %X, flags2: %X", updatetype, m_objectTypeId, flags, flags2);
 
     ByteBuffer buf(500);
-    buf << uint8( updatetype );
-    buf << uint8( 0xFF );
-    buf << GetGUID() ;
+    buf << updatetype;
+    //buf.append(GetPackGUID());    //client crashes when using this
+    buf << (uint8)0xFF << GetGUID();
     buf << m_objectTypeId;
 
-    _BuildMovementUpdate( &buf, flags, flags2 );
+    _BuildMovementUpdate(&buf, flags, flags2);
 
     UpdateMask updateMask;
     updateMask.SetCount( m_valuesCount );
     _SetCreateBits( &updateMask, target );
-    _BuildValuesUpdate( &buf, &updateMask );
+    _BuildValuesUpdate( &buf, &updateMask, target );
     data->AddUpdateBlock(buf);
-
 }
 
-void
-Object::BuildUpdate(UpdateDataMapType &update_players)
+void Object::BuildUpdate(UpdateDataMapType &update_players)
 {
     ObjectAccessor::_buildUpdateObject(this,update_players);
     ClearUpdateMask(true);
@@ -199,14 +176,15 @@ void Object::BuildValuesUpdateBlockForPlayer(UpdateData *data, Player *target) c
     ByteBuffer buf(500);
 
     buf << (uint8) UPDATETYPE_VALUES;
-    buf << (uint8) 0xFF;                                    // must be packed GUID  ?
+    //buf.append(GetPackGUID());    client crashes when using this
+    buf << (uint8)0xFF;
     buf << GetGUID();
 
     UpdateMask updateMask;
     updateMask.SetCount( m_valuesCount );
 
     _SetUpdateBits( &updateMask, target );
-    _BuildValuesUpdate( &buf, &updateMask );
+    _BuildValuesUpdate( &buf, &updateMask, target );
 
     data->AddUpdateBlock(buf);
 }
@@ -326,7 +304,7 @@ void Object::_BuildMovementUpdate(ByteBuffer * data, uint8 flags, uint32 flags2 
     }
 }
 
-void Object::_BuildValuesUpdate(ByteBuffer * data, UpdateMask *updateMask) const
+void Object::_BuildValuesUpdate(ByteBuffer * data, UpdateMask *updateMask, Player * /*target*/) const
 {
     WPAssert(updateMask && updateMask->GetCount() == m_valuesCount);
 

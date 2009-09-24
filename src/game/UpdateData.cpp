@@ -118,7 +118,6 @@ bool UpdateData::BuildPacket(WorldPacket *packet)
 
     if (m_data.size() > 50 )
     {
-
         uint32 destsize = buf.size() + buf.size()/10 + 16;
         packet->resize( destsize );
 
