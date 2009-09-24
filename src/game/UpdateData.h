@@ -31,7 +31,6 @@ enum OBJECT_UPDATE_TYPE
     UPDATETYPE_NEAR_OBJECTS         = 5
 };
 
-/* added in 2.x code, possible 1.x correct also
 enum OBJECT_UPDATE_FLAGS
 {
     UPDATEFLAG_SELF         = 0x01,
@@ -42,7 +41,6 @@ enum OBJECT_UPDATE_FLAGS
     UPDATEFLAG_LIVING       = 0x20,
     UPDATEFLAG_HASPOSITION  = 0x40
 };
-*/
 
 class UpdateData
 {
