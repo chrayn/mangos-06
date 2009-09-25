@@ -360,9 +360,6 @@ class MANGOS_DLL_SPEC Creature : public Unit
 
         void setDeathState(DeathState s);                   // overwrite virtual Unit::setDeathState
 
-        void Say(char const* text, uint32 language);
-        void MonsterSay(char const *text, uint32 language, uint64 targetGUID);
-
         bool LoadFromDB(uint32 guid, QueryResult *result, uint32 InstanceId);
         virtual void SaveToDB();                            // overwrited in Pet
         virtual void DeleteFromDB();                        // overwrited in Pet

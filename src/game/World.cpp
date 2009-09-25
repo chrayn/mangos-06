@@ -406,7 +406,7 @@ void World::SetInitialWorldSettings()
     sLog.outString( "Loading Item Texts..." );
     objmgr.LoadItemTexts();
 
-    sLog.outString( "Loading Creature Templates..." );
+    sLog.outString( "Loading Creature templates..." );
     objmgr.LoadCreatureTemplates();
 
     sLog.outString( "Loading Creature Reputation OnKill Data..." );
@@ -701,7 +701,7 @@ void World::ScriptsProcess()
                     break;
                 }
 
-                ((Creature *)step.source)->MonsterSay(step.script->datatext.c_str(), 0, step.target->GetGUID());
+                ((Creature *)step.source)->Say(step.script->datatext.c_str(), 0);
                 break;
             case SCRIPT_COMMAND_EMOTE:
                 if(!step.source)
