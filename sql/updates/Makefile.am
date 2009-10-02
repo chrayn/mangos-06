@@ -26,10 +26,12 @@ pkgdatadir = $(datadir)/mangos/sql/updates
 #  Install basic SQL files to datadir
 pkgdata_DATA = \
 	001_3463_mangos.sql \
+	002______characters_item_instance.sql \
 	README
 
 ## Additional files to include when running 'make dist'
 #  SQL update files, to upgrade database schema from older revisions
 EXTRA_DIST = \
 	001_3463_mangos.sql \
+	002______characters_item_instance.sql \
 	README

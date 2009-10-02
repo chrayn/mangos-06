@@ -51,16 +51,16 @@ enum EItemFields
     ITEM_FIELD_ITEM_TEXT_ID                    = OBJECT_END + 0x27, // Size:1
     ITEM_FIELD_DURABILITY                      = OBJECT_END + 0x28, // Size:1
     ITEM_FIELD_MAXDURABILITY                   = OBJECT_END + 0x29, // Size:1
-    ITEM_END                                   = OBJECT_END + 0x30,
+    ITEM_END                                   = OBJECT_END + 0x2A,
 };
 
 enum EContainerFields
 {
     CONTAINER_FIELD_NUM_SLOTS                  = ITEM_END + 0x00, // Size:1
     CONTAINER_ALIGN_PAD                        = ITEM_END + 0x01, // Size:1
-    CONTAINER_FIELD_SLOT_1                     = ITEM_END + 0x02, // count=54
-    CONTAINER_FIELD_SLOT_LAST                  = ITEM_END + 0x36,
-    CONTAINER_END                              = ITEM_END + 0x38,
+    CONTAINER_FIELD_SLOT_1                     = ITEM_END + 0x02, // count=56
+    CONTAINER_FIELD_SLOT_LAST                  = ITEM_END + 0x38,
+    CONTAINER_END                              = ITEM_END + 0x3A,
 };
 
 enum EUnitFields
