@@ -631,11 +631,11 @@ void Spell::EffectApplyAura(uint32 i)
             case SPELL_AURA_PERIODIC_TRIGGER_SPELL:
             case SPELL_AURA_EMPATHY:
                 break;
+
             default:
+                //If Aura is applied to monster then attack caster
                 if(Aur->GetTarget()->GetTypeId() == TYPEID_UNIT && !Aur->GetTarget()->isInCombat())
                     ((Creature*)Aur->GetTarget())->AI().AttackStart(m_caster);
-                else
-                    m_caster->Attack(Aur->GetTarget());
         }
     }
 

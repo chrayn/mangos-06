@@ -5288,3 +5288,8 @@ Creature* Unit::SummonCreature(uint32 id, uint32 mapid, float x, float y, float 
     //return the creature therewith the summoner has access to it
     return pCreature;
 }
+
+Unit* Unit::GetUnit(WorldObject& object, uint64 guid)
+{
+    return ObjectAccessor::Instance().GetUnit(object,guid);
+}
